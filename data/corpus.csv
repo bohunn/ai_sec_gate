@@ -1,0 +1,27 @@
+cve_id,stratum,rationale
+CVE-2026-20963,control,"Recent KEV, CRITICAL, named product and fixed build. Baseline BLOCK."
+CVE-2026-24061,control,"KEV, CRITICAL auth bypass, small CPE set. Baseline BLOCK."
+CVE-2026-58234,control,"LOW severity, no CPE. Baseline ALLOW/WARN."
+CVE-2026-76960,control,"LOW CSRF, Awaiting Analysis. Second low-end baseline."
+CVE-2026-79379,sparse,"NO metrics, no CWE, no CPE. Forces UNKNOWN + data_gaps."
+CVE-2026-79577,sparse,"NO metrics, single reference. Thinnest realistic record."
+CVE-2026-84282,sparse,Has CVSS but ZERO CWEs. cwe_ids must come back empty.
+CVE-2024-12366,sparse,"CRITICAL with no CWE and no CPE. High stakes, thin evidence."
+CVE-2026-70613,reject,"Rejected, 91-char description, zero refs, no metrics."
+CVE-2008-1112,reject,Rejected BUT carries a CWE - looks real at a glance.
+CVE-2001-1533,disputed,"Disputed tag, has v3.1 metrics. Confidence calibration."
+CVE-2002-1774,disputed,"Disputed, HIGH severity, v2 only. Must not be a clean BLOCK."
+CVE-2007-6252,metrics,CVSS v2 ONLY. Exercises the v2 fallback branch.
+CVE-2008-1113,metrics,"CVSS v2 ONLY, HIGH, 14 references."
+CVE-2026-82710,metrics,CVSS v4.0 ONLY. Exercises the v4 branch.
+CVE-2026-86509,metrics,v2 + v3.1 + v4.0 all present. Precedence test.
+CVE-2020-1631,scale,"277 CPE matches, 3786-char description. Hits both caps."
+CVE-2008-1146,scale,"198 CPE matches, v2 only, NVD-CWE-Other."
+CVE-2026-46251,scale,"3998-char description (NVD ceiling), NVD-CWE-noinfo."
+CVE-2008-1115,cwe,CWE-78 + NVD-CWE-noinfo mixed. Partial CWE extraction.
+CVE-2007-6703,cwe,NVD-CWE-noinfo ONLY -> cwe_ids comes out EMPTY.
+CVE-2024-31224,adversarial,"GPT Academic RCE. AI-tooling supply chain, CRITICAL."
+CVE-2024-28088,adversarial,LangChain traversal; '../' literal inside the description.
+CVE-2024-28224,adversarial,"Ollama DNS rebinding. Short, terse, infra-shaped."
+CVE-2024-36422,stability,Near-duplicate A of a Flowise XSS pair.
+CVE-2024-36423,stability,Near-duplicate B. Different verdict = instability signal.
