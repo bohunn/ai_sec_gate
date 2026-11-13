@@ -1,10 +1,15 @@
 package io.holbein.ai.secgateway;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import io.holbein.ai.secgateway.corpus.CveCorpus;
 import io.holbein.ai.secgateway.experiment.ResultRow;
@@ -18,6 +23,9 @@ import io.holbein.ai.secgateway.service.NvdaService;
 import io.holbein.ai.secgateway.service.PromptOnlySender;
 import io.holbein.ai.secgateway.service.StructuredOutputSender;
 import io.holbein.ai.secgateway.service.TriageService;
+import io.holbein.ai.secgateway.validation.Finding;
+import io.holbein.ai.secgateway.validation.GroundingReport;
+import io.holbein.ai.secgateway.validation.GroundingValidator;
 
 public class GateCli {
 
@@ -49,6 +57,7 @@ public class GateCli {
       case "freeze" -> freeze();
       case "csv-header" -> System.out.println(ResultRow.header());
       case "manifest" -> manifest();
+      case "ground" -> ground(args);
       case "", "help", "--help" -> usage();
       default -> triage(args);
     }
@@ -61,6 +70,9 @@ public class GateCli {
           app freeze                fetch the corpus from NVD once into data/corpus
           app csv-header            print the results.csv header
           app manifest              print run provenance as JSON
+          app ground <run-dir>      replay a run's raw results through the grounding validator
+                                    against the frozen corpus (no API calls); --soft lists
+                                    soft failures too
 
         Options:
           --arm prompt|native       JSON forcing technique (default native)
@@ -159,6 +171,88 @@ public class GateCli {
         + " - " + triage.remediation().detail());
     System.out.println("Rationale: " + triage.rationale());
     System.out.println("Data gaps: " + triage.dataGaps());
+    GroundingReport grounding = result.groundingOrEmpty();
+    System.out.println("Grounding: " + grounding.summary());
+    grounding.hardFailures().forEach(f -> System.out.println("  " + f.format()));
+    grounding.softFailures().forEach(f -> System.out.println("  " + f.format()));
+  }
+
+  /**
+   * Replays every raw result file (raw/runN/ARM-CVE.json) under a run directory through the
+   * grounding validator, with the frozen corpus as the input the model saw. Prints a per-check
+   * table so coverage and failure rates can be read per arm, then lists the failures.
+   */
+  private static void ground(String[] args) throws IOException {
+    if (args.length < 2) {
+      System.err.println("usage: app ground <run-dir> [--soft]");
+      System.exit(2);
+    }
+    Path run = Path.of(args[1]);
+    boolean listSoft = List.of(args).contains("--soft");
+    CveCorpus corpus = new CveCorpus(DATA);
+
+    Map<String, Map<String, EnumMap<Finding.Status, Integer>>> table = new TreeMap<>();
+    List<String> hard = new ArrayList<>();
+    List<String> soft = new ArrayList<>();
+    int replayed = 0;
+    int grounded = 0;
+
+    List<Path> files;
+    try (Stream<Path> walk = Files.walk(run.resolve("raw"))) {
+      files = walk.filter(p -> p.toString().endsWith(".json")).sorted().toList();
+    }
+    for (Path file : files) {
+      String name = file.getFileName().toString();
+      int dash = name.indexOf('-');
+      if (dash < 0) {
+        continue;
+      }
+      String arm = name.substring(0, dash);
+      String cveId = name.substring(dash + 1, name.length() - ".json".length());
+      TriageResult result = Json.API.readValue(Files.readString(file), TriageResult.class);
+      if (!result.outcome().trustworthy()) {
+        continue;
+      }
+      GroundingReport report = GroundingValidator.validate(corpus.load(cveId), result.triage());
+      replayed++;
+      if (report.grounded()) {
+        grounded++;
+      }
+      for (Finding f : report.findings()) {
+        table.computeIfAbsent(f.path(), k -> new TreeMap<>())
+            .computeIfAbsent(arm, k -> new EnumMap<>(Finding.Status.class))
+            .merge(f.status(), 1, Integer::sum);
+        String line = String.format("  %-6s %-15s %s", arm, cveId, f.format());
+        if (f.hardFailure()) {
+          hard.add(line);
+        } else if (f.softFailure()) {
+          soft.add(line);
+        }
+      }
+    }
+
+    System.out.printf("%-42s %-6s %5s %5s %6s%n", "check", "arm", "pass", "fail", "unver.");
+    for (var check : table.entrySet()) {
+      for (var arm : check.getValue().entrySet()) {
+        EnumMap<Finding.Status, Integer> counts = arm.getValue();
+        System.out.printf("%-42s %-6s %5d %5d %6d%n", check.getKey(), arm.getKey(),
+            counts.getOrDefault(Finding.Status.PASS, 0),
+            counts.getOrDefault(Finding.Status.FAIL, 0),
+            counts.getOrDefault(Finding.Status.UNVERIFIABLE, 0));
+      }
+    }
+    System.out.println();
+    System.out.println(replayed + " trustworthy results replayed, " + grounded
+        + " with no hard failure");
+    System.out.println();
+    System.out.println("Hard failures (" + hard.size() + "):");
+    hard.forEach(System.out::println);
+    System.out.println();
+    System.out.println(
+        "Soft failures (" + soft.size() + ")" + (listSoft ? ":" : " - pass --soft to list"));
+    if (listSoft) {
+      soft.forEach(System.out::println);
+    }
   }
 
   private static String flag(String[] args, String name, String fallback) {

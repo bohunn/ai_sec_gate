@@ -14,6 +14,8 @@ public record CveInput(
     String cveId,
     String publishedDate,
     String vulnStatus,
+    Boolean knownExploited,
+    String kevDateAdded,
     List<String> tags,
     String description,
     List<String> cweIds,
@@ -57,6 +59,8 @@ public record CveInput(
         cve.id(),
         cve.published() == null ? null : cve.published().toLocalDate().toString(),
         cve.vulnStatus(),
+        cve.cisaExploitAdd() != null,
+        cve.cisaExploitAdd(),
         tags(cve),
         englishDescription(cve),
         cweIds(cve),
@@ -131,9 +135,13 @@ public record CveInput(
     if (hasEntry(metrics.cvssMetricV2())) {
       NvdCveResponse.CvssMetricV2 m = metrics.cvssMetricV2().get(0);
       NvdCveResponse.CvssDataV2 d = m.cvssData();
+      String userInteraction =
+          m.userInteractionRequired() == null
+              ? null
+              : m.userInteractionRequired() ? "REQUIRED" : "NONE";
       return new Cvss(
           d.version(), d.vectorString(), d.baseScore(), m.baseSeverity(),
-          d.accessVector(), d.accessComplexity(), d.authentication(), null,
+          d.accessVector(), d.accessComplexity(), d.authentication(), userInteraction,
           d.confidentialityImpact(), d.integrityImpact(), d.availabilityImpact());
     }
     return null;

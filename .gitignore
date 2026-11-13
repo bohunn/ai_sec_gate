@@ -26,3 +26,6 @@ docs/architecture/
 
 data/logs/
 data/runs/*/raw/
+
+# local backups of corpus/runs/logs
+backup/

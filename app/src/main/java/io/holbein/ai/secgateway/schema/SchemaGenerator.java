@@ -1,6 +1,5 @@
 package io.holbein.ai.secgateway.schema;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.util.List;
 
@@ -10,7 +9,8 @@ public final class SchemaGenerator {
 
   private static final Names NAMES = new Names();
 
-  private SchemaGenerator() {}
+  private SchemaGenerator() {
+  }
 
   public static JsonSchema of(Class<?> record) {
     if (!record.isRecord()) {

@@ -34,9 +34,11 @@ longer. Full breakdown in [COMPARISON.md](COMPARISON.md).
    `SchemaGenerator`, so the schema and the code cannot drift apart.
 3. **Claude with structured outputs** - the record is sent as untrusted data, and the schema is
    enforced through constrained decoding (or, in the prompt-only arm, requested in the prompt).
-4. **Validation** - the response is checked against the schema. Fields that copy the input
-   (`nvd_base_score`, `cwe_ids`, `vendor`, `product`) are kept so a grounding check can compare
-   them against the source record.
+4. **Validation** - the response is checked against the schema, then grounded against the input
+   it was generated from: copied fields (`nvd_base_score`, `cwe_ids`, `key_references`), fields
+   derived from the CVSS vector, `fixed_version` against the version numbers the input actually
+   contains, `exploit_maturity` against the KEV listing, plus ten cross-field invariants. Each
+   check reports pass, fail or unverifiable; see [VALIDATION.md](VALIDATION.md).
 5. **Retry with feedback** - if validation fails, the violations go back to the model as a
    follow-up turn. When retries run out, the result is marked as a broken gate rather than passed.
 
@@ -45,8 +47,9 @@ result.
 
 ## Known limitations
 
-- `fixed_version` cannot be verified. NVD often does not publish one, and a plausible invented
-  version number passes every check.
+- `fixed_version` is verified only as far as the input goes: a version number must appear
+  somewhere in the record the model was sent. A real fix release the record does not mention
+  cannot be told apart from an invented one without a second source (OSV).
 - One run per CVE is a sample, not a property. Model variance changes first-attempt results between
   runs, even on identical inputs.
 - Records without CPE configuration data give no signal for `component_type`, so those fields fall
@@ -54,8 +57,10 @@ result.
 
 ## Next steps
 
-- Add OSV as a second source for fixed and introduced version ranges, so `fixed_version` can be
-  verified.
+- Add OSV as a second source for fixed and introduced version ranges, to verify fixed versions
+  the NVD record does not mention.
+- Run one batch with the new input fields (`known_exploited`, v2 user interaction) and decide
+  whether hard grounding failures should trigger a retry.
 - Threat-model the trust boundary, in particular forged assistant turns when message history is
   built from untrusted data.
 - Repeat the comparison with several runs per CVE to put an error bar on the results.
@@ -65,6 +70,7 @@ result.
 | File | Contents |
 | --- | --- |
 | [DECISIONS.md](DECISIONS.md) | Design decisions and trade-offs |
+| [VALIDATION.md](VALIDATION.md) | Per-field grounding specification, invariants, replay results |
 | [COMPARISON.md](COMPARISON.md) | Full two-arm results |
 | [FINDINGS_FIRST_STEP_API.md](FINDINGS_FIRST_STEP_API.md) | Notes from the first API experiments |
 | [SELECTED_CVES.md](SELECTED_CVES.md) | The 26-CVE corpus and why each was chosen |
@@ -81,6 +87,8 @@ export ANTHROPIC_API_KEY=sk-ant-...
 Run it from the repository root, because the CLI reads `data/` relative to the working directory.
 Use `--arm prompt|native` to choose the technique, and `app help` lists all options. To run the
 full two-arm batch, use `scripts/run-batch.sh` (`RUNS=3 scripts/run-batch.sh` repeats each CVE).
+`app ground data/runs/<stamp>` replays a recorded run through the grounding validator without
+calling the API.
 
 ---
 

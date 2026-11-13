@@ -154,3 +154,74 @@ recorded *that* the first attempt failed but not *which field* was wrong - the s
 diagnostic in the experiment. `TriageService` now carries the first failing attempt's violations
 through to the result, and a test asserts it, because the loss was silent and would have produced a
 comparison table with an empty reason column.
+
+## 2026-10-18 - field validation specification
+
+[VALIDATION.md](VALIDATION.md) lists every field of `CveTriage.java` with its oracle, assertion
+and bucket where one exists. It is the specification the grounding validator implements.
+
+## 2026-11-12 - Grounding validator: the oracle is the input, three statuses, two severities
+
+### Context
+
+`SchemaValidator` proves the output has the right shape. It cannot tell that `nvd_base_score`
+was copied wrong, that `fixed_version` names a release the record never mentions, or that a
+KEV-listed CVE came back as `UNPROVEN`. The open questions in VALIDATION.md were about what to
+compare each field against and what to do when nothing is there to compare it with.
+
+Before deciding, the 103 trustworthy outputs from the two recorded runs were replayed against
+the frozen corpus with a draft of every assert. The decisions below follow from what that showed,
+not from the schema alone.
+
+### Decisions
+
+**The oracle is `CveInput`, not the NVD record.** A field is grounded when the model could have
+read it from the user turn. Anything the record knows and the input does not is not an oracle
+until it is plumbed through. Two fields were plumbed for this reason: `known_exploited` /
+`kev_date_added` (from `cisaExploitAdd`) and the CVSS v2 `userInteractionRequired` flag (into the
+shared `user_interaction` slot). The replay showed the model calling a KEV-listed CVE
+`PROOF_OF_CONCEPT` four times out of four - it had no way to know.
+
+**`UNVERIFIABLE` is a result, not a skip.** Ten of twenty-six records have no CPE, two have no
+CVSS. If those checks were skipped, a run's pass rate would be computed over a denominator nobody
+can see. Every check reports PASS, FAIL or UNVERIFIABLE and `app ground` prints all three per
+arm.
+
+**HARD and SOFT are about the oracle, not the field.** Copied fields and v3/v4 vector components
+are HARD: the model was told to copy them. CPE-derived names, the v2 impact mapping, reference
+tags and the priority band are SOFT: the replay showed every CPE "failure" was NVD's CPE data
+being wrong about a 2008 record, with the model following the description correctly. A soft
+failure is printed and counted; it never makes a result ungrounded.
+
+**Grounding is recorded, not retried.** The feedback loop stays a schema-repair loop. A HARD
+grounding failure is in the CSV row, the human output and the raw JSON, and does not change the
+exit code. Whether it should cost a retry is deferred until one batch has run with the new input
+fields, because the retry's cost and the failure rate both need measuring first.
+
+**Ten invariants, two rejected.** N1a/b, N2-N7 are HARD and held on all 103 outputs; N8-N10 are
+SOFT and also held. Two candidates were rejected by the data: `UPGRADE ⇒ fixed_version` (three
+defensible counterexamples) and `data_gaps ≠ [] ⇒ confidence == LOW` (violated by 50 of 87 outputs
+despite being in the field description - the rule is wrong, not the model).
+
+**The six open calls** (component_type reading, unverifiable handling, `data_gaps` type,
+`mechanism`'s fate, priority's role, empty fallbacks) are answered in VALIDATION.md with the flip
+named for each.
+
+### Consequences
+
+- `CveInput` gained two fields. The user turn changes, so results before and after this date are
+  not byte-comparable on `exploit_maturity` and v2 `user_interaction_required`. The schema and
+  its hash are unchanged.
+- `TriageResult` carries a `GroundingReport`; `ResultRow` has four new trailing columns; older
+  `results.csv` files are shorter but parse.
+- `app ground <run-dir>` replays any recorded run offline. On the two existing runs: 11 hard
+  failures across 103 outputs, of which 5 are a genuine misread of a v3.1 vector on one CVE, 2 a
+  misread of a v2 vector, and 4 the KEV artefact above. `fixed_version`, the field the September
+  decision called the one no validator could check, was grounded in 36 of 36 non-null cases.
+- One schema change is proposed and deliberately not made: dropping the `data_gaps ⇒ LOW`
+  sentence from `confidence`. It changes the schema hash and belongs at a batch boundary.
+- Noted while replaying: `GateCli.MODEL` is a constant written into the manifest, while
+  `AnthropicService.DEFAULT_MODEL` is what is sent. The two were edited independently on
+  2026-09-28 (the working tree has `claude-sonnet-5` in the service, `claude-opus-5` in the CLI),
+  so the `20260928-093807` manifest may not name the model that produced it. The CLI should read
+  the model from the service.

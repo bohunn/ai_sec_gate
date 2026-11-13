@@ -15,11 +15,11 @@ import io.holbein.ai.secgateway.model.MessageParam;
 import io.holbein.ai.secgateway.model.MessageResponse;
 import io.holbein.ai.secgateway.model.OutputConfig;
 import io.holbein.ai.secgateway.model.SystemParam;
-import io.holbein.ai.secgateway.model.TriageResult;
 
 public class AnthropicService {
   private static final String ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-  private static final String DEFAULT_MODEL = "claude-opus-5";
+  // private static final String DEFAULT_MODEL = "claude-opus-5";
+  private static final String DEFAULT_MODEL = "claude-sonnet-5";
 
   private final HttpClient client;
   private final String apiKey;
@@ -40,8 +40,8 @@ public class AnthropicService {
   public MessageResponse send(
       List<MessageParam> messages, List<SystemParam> system, int maxTokens,
       OutputConfig outputConfig) {
-    HttpResponse<String> response =
-        HttpRetry.send(() -> sendAnthropicRequest(messages, system, maxTokens, outputConfig));
+    HttpResponse<String> response = HttpRetry
+        .send(() -> sendAnthropicRequest(messages, system, maxTokens, outputConfig));
 
     if (response.statusCode() != 200) {
       throw new ApiException(

@@ -6,6 +6,8 @@ import io.holbein.ai.secgateway.Csv;
 import io.holbein.ai.secgateway.model.CveTriage;
 import io.holbein.ai.secgateway.model.MessageResponse;
 import io.holbein.ai.secgateway.model.TriageResult;
+import io.holbein.ai.secgateway.validation.Finding;
+import io.holbein.ai.secgateway.validation.GroundingReport;
 import io.holbein.ai.secgateway.validation.Violation;
 
 public final class ResultRow {
@@ -15,7 +17,9 @@ public final class ResultRow {
           "cve_id", "stratum", "arm", "run", "first_attempt_valid", "outcome", "attempts",
           "violation_count", "first_violation_path", "first_violation_message",
           "input_tokens", "output_tokens", "latency_ms",
-          "verdict", "priority", "confidence", "adjusted_severity", "component_type", "mechanism");
+          "verdict", "priority", "confidence", "adjusted_severity", "component_type", "mechanism",
+          "grounding_hard_fail", "grounding_soft_fail", "grounding_unverifiable",
+          "first_hard_fail_path");
 
   private ResultRow() {}
 
@@ -30,6 +34,11 @@ public final class ResultRow {
     Violation first = violations.isEmpty() ? null : violations.get(0);
     CveTriage triage = result.outcome().trustworthy() ? result.triage() : null;
     MessageResponse.Usage usage = result.usage();
+    GroundingReport grounding = triage == null ? null : result.groundingOrEmpty();
+    Finding firstHard =
+        grounding == null || grounding.hardFailures().isEmpty()
+            ? null
+            : grounding.hardFailures().get(0);
 
     return String.join(
         ",",
@@ -47,7 +56,11 @@ public final class ResultRow {
         cell(triage, t -> t.confidence().name()),
         cell(triage, t -> t.severity().adjustedSeverity().name()),
         cell(triage, t -> t.affected().componentType().name()),
-        cell(triage, t -> t.weakness().mechanism().name()));
+        cell(triage, t -> t.weakness().mechanism().name()),
+        grounding == null ? "" : String.valueOf(grounding.hardFailures().size()),
+        grounding == null ? "" : String.valueOf(grounding.softFailures().size()),
+        grounding == null ? "" : String.valueOf(grounding.unverifiable().size()),
+        Csv.escape(firstHard == null ? "" : firstHard.path()));
   }
 
   private static String cell(CveTriage triage, java.util.function.Function<CveTriage, String> of) {

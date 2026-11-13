@@ -25,7 +25,29 @@ class CveInputTest {
     return new NvdCveResponse.Cve(
         id, null, "Analyzed", null,
         List.of(new NvdCveResponse.LangValue("en", description)),
-        null, null, null, null);
+        null, null, null, null, null);
+  }
+
+  private static NvdCveResponse.Cve kevListed(String id) {
+    return new NvdCveResponse.Cve(
+        id, null, "Analyzed", null,
+        List.of(new NvdCveResponse.LangValue("en", "Exploited in the wild.")),
+        null, "2026-01-26", null, null, null);
+  }
+
+  private static NvdCveResponse.Cve v2Only(String id, Boolean userInteractionRequired) {
+    NvdCveResponse.CvssDataV2 data =
+        new NvdCveResponse.CvssDataV2(
+            "2.0", "AV:N/AC:M/Au:N/C:P/I:P/A:P", 6.8, "NETWORK", "MEDIUM", "NONE",
+            "PARTIAL", "PARTIAL", "PARTIAL");
+    NvdCveResponse.Metrics metrics =
+        new NvdCveResponse.Metrics(
+            null, null, null,
+            List.of(new NvdCveResponse.CvssMetricV2(data, "MEDIUM", false, userInteractionRequired)));
+    return new NvdCveResponse.Cve(
+        id, null, "Analyzed", null,
+        List.of(new NvdCveResponse.LangValue("en", "Old bug.")),
+        metrics, null, null, null, null);
   }
 
   @Test
@@ -43,6 +65,8 @@ class CveInputTest {
 
     assertEquals(List.of("application"), input.cpeCategories());
     assertEquals(List.of(), input.tags(), "this fixture carries no NVD tags");
+    assertEquals(false, input.knownExploited(), "this fixture is not KEV-listed");
+    assertNull(input.kevDateAdded());
 
     assertEquals(1, input.affected().size());
     assertEquals("1.2.103", input.affected().get(0).endIncluding());
@@ -77,6 +101,25 @@ class CveInputTest {
 
     assertTrue(description.length() < 4100, "description must be bounded, was " + description.length());
     assertTrue(description.endsWith("[truncated]"));
+  }
+
+  @Test
+  void carriesTheKevListingSoTheModelAndTheValidatorSeeTheSameEvidence() {
+    CveInput input = CveInput.from(kevListed("CVE-0-3"));
+
+    assertEquals(true, input.knownExploited());
+    assertEquals("2026-01-26", input.kevDateAdded());
+    assertTrue(Json.API.writeValueAsString(input).contains("\"known_exploited\":true"));
+  }
+
+  @Test
+  void mapsTheV2UserInteractionFlagOntoTheSharedCvssShape() {
+    assertEquals("REQUIRED", CveInput.from(v2Only("CVE-0-4", true)).cvss().userInteraction());
+    assertEquals("NONE", CveInput.from(v2Only("CVE-0-5", false)).cvss().userInteraction());
+    assertNull(CveInput.from(v2Only("CVE-0-6", null)).cvss().userInteraction(),
+        "v2 without the flag states nothing about user interaction");
+    assertEquals("NONE", CveInput.from(v2Only("CVE-0-4", true)).cvss().privilegesRequired(),
+        "v2 authentication rides in the privilegesRequired slot");
   }
 
   @Test

@@ -11,6 +11,8 @@ import io.holbein.ai.secgateway.model.MessageResponse;
 import io.holbein.ai.secgateway.model.SystemParam;
 import io.holbein.ai.secgateway.model.TriageResult;
 import io.holbein.ai.secgateway.schema.CveTriageSchema;
+import io.holbein.ai.secgateway.validation.GroundingReport;
+import io.holbein.ai.secgateway.validation.GroundingValidator;
 import io.holbein.ai.secgateway.validation.SchemaValidator;
 import io.holbein.ai.secgateway.validation.Violation;
 import tools.jackson.databind.JsonNode;
@@ -94,7 +96,11 @@ public class TriageService {
 
       if (violations.isEmpty()) {
         CveTriage triage = Json.API.treeToValue(parsed, CveTriage.class);
-        return TriageResult.valid(triage, firstFailure, attempt, usage);
+        // Grounding findings are recorded, not fed back: the schema loop repairs shape, and
+        // whether a grounding failure should cost another attempt is a separate decision
+        // (VALIDATION.md, decision 2).
+        GroundingReport grounding = GroundingValidator.validate(input, triage);
+        return TriageResult.valid(triage, firstFailure, attempt, usage, grounding);
       }
       if (firstFailure.isEmpty()) {
         firstFailure = violations;

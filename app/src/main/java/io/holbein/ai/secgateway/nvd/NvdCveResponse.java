@@ -17,6 +17,7 @@ public record NvdCveResponse(
       List<CveTag> cveTags,
       List<LangValue> descriptions,
       Metrics metrics,
+      String cisaExploitAdd,
       List<Weakness> weaknesses,
       List<Configuration> configurations,
       List<Reference> references) {}
@@ -61,7 +62,11 @@ public record NvdCveResponse(
       String integrityImpact,
       String availabilityImpact) {}
 
-  public record CvssMetricV2(CvssDataV2 cvssData, String baseSeverity, Boolean acInsufInfo) {}
+  public record CvssMetricV2(
+      CvssDataV2 cvssData,
+      String baseSeverity,
+      Boolean acInsufInfo,
+      Boolean userInteractionRequired) {}
 
   public record CvssDataV2(
       String version,

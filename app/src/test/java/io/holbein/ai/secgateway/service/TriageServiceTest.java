@@ -13,14 +13,17 @@ import io.holbein.ai.secgateway.model.CveTriage;
 import io.holbein.ai.secgateway.model.MessageResponse;
 import io.holbein.ai.secgateway.model.SystemParam;
 import io.holbein.ai.secgateway.model.TriageResult;
+import io.holbein.ai.secgateway.validation.Finding;
+import io.holbein.ai.secgateway.validation.GroundingReport;
 import org.junit.jupiter.api.Test;
 
 class TriageServiceTest {
   private static final List<SystemParam> SYSTEM = List.of(new SystemParam("text", "test"));
 
   private static final CveInput INPUT =
-      new CveInput("CVE-2019-1010218", "2019-07-22", "Modified", List.of(), "Buffer overflow.",
-          List.of("CWE-120"), null, List.of("application"), List.of(), List.of());
+      new CveInput("CVE-2019-1010218", "2019-07-22", "Modified", false, null, List.of(),
+          "Buffer overflow.", List.of("CWE-120"), null, List.of("application"), List.of(),
+          List.of());
 
   private static MessageResponse respond(String stopReason, String text) {
     return new MessageResponse("msg_1", "message", "assistant", "claude-opus-5",
@@ -69,6 +72,21 @@ class TriageServiceTest {
     assertEquals(List.of(), result.violations());
     assertEquals("CVE-2019-1010218", result.triage().cveId());
     assertEquals(200, result.usage().outputTokens(), "usage must be recorded for cost tracking");
+  }
+
+  @Test
+  void aValidResponseIsGroundedAndTheReportTravelsWithTheResult() {
+    TriageResult result = run((m, s, t) -> respond("end_turn", validDocument()));
+
+    assertTrue(
+        result.grounding().findings().stream()
+            .anyMatch(f -> f.path().equals("cve_id") && f.status() == Finding.Status.PASS),
+        "grounding must run on schema-valid output");
+    assertEquals(
+        GroundingReport.EMPTY,
+        TriageResult.failed("CVE-0-0", TriageResult.Outcome.REFUSED, "x", List.of(), 1, null)
+            .grounding(),
+        "a failed result has nothing to ground");
   }
 
   @Test
