@@ -22,7 +22,15 @@ import io.holbein.ai.secgateway.validation.Finding.Severity;
  * Consistency invariants between fields of one triage (and the record's status). These do not
  * need an oracle: a document that violates one contradicts itself. Numbered as in VALIDATION.md.
  */
-final class Invariants {
+public final class Invariants {
+  /**
+   * The one sentence of the system prompt that N4 and N5 enforce. {@code GateCli} appends it to
+   * the prompt from here, so the rule and its check cannot drift apart.
+   */
+  public static final String BLOCK_RULE =
+      "Reserve BLOCK for vulnerabilities that are both reachable over the network and have a"
+          + " published fix.";
+
   private static final int MIN_REASON_CHARS = 20;
   private static final Set<RemediationAction> FIXING =
       EnumSet.of(RemediationAction.UPGRADE, RemediationAction.PATCH);
@@ -71,7 +79,7 @@ final class Invariants {
         "nvd_severity UNKNOWN iff nvd_base_score null",
         "nvd_severity is " + s.nvdSeverity() + " while nvd_base_score is " + s.nvdBaseScore()));
 
-    // N4 / N5: the system prompt's BLOCK rule - network reachable and a published fix.
+    // N4 / N5: BLOCK_RULE.
     if (verdict == Verdict.BLOCK) {
       findings.add(rule("invariant.N4", Severity.HARD, e.attackVector() == AttackVector.NETWORK,
           "BLOCK is network reachable",

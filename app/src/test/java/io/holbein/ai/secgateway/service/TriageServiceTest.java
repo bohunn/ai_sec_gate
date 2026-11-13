@@ -72,6 +72,7 @@ class TriageServiceTest {
     assertEquals(List.of(), result.violations());
     assertEquals("CVE-2019-1010218", result.triage().cveId());
     assertEquals(200, result.usage().outputTokens(), "usage must be recorded for cost tracking");
+    assertEquals("claude-opus-5", result.model(), "the model the API answered with is provenance");
   }
 
   @Test
@@ -84,7 +85,7 @@ class TriageServiceTest {
         "grounding must run on schema-valid output");
     assertEquals(
         GroundingReport.EMPTY,
-        TriageResult.failed("CVE-0-0", TriageResult.Outcome.REFUSED, "x", List.of(), 1, null)
+        TriageResult.failed("CVE-0-0", TriageResult.Outcome.REFUSED, "x", List.of(), 1, null, null)
             .grounding(),
         "a failed result has nothing to ground");
   }

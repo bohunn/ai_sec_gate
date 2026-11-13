@@ -285,7 +285,7 @@ class GroundingValidatorTest {
   }
 
   @Test
-  void vulnerableVersionsMayBeProseButNumbersMustComeFromTheInput() {
+  void vulnerableVersionsMayBeProseButVersionTokensMustComeFromTheInput() {
     GroundingReport prose = GroundingValidator.validate(INPUT, with(d ->
         at(d, "affected").put("vulnerable_versions", "all released versions")));
     assertFinding(prose, "affected.vulnerable_versions", Status.UNVERIFIABLE, null);
@@ -293,6 +293,35 @@ class GroundingValidatorTest {
     GroundingReport invented = GroundingValidator.validate(INPUT, with(d ->
         at(d, "affected").put("vulnerable_versions", ">= 0.0.300 and < 0.1.12")));
     assertFinding(invented, "affected.vulnerable_versions", Status.FAIL, Severity.SOFT);
+  }
+
+  @Test
+  void versionTokensAreNotOnlyDottedNumbers() {
+    CveInput firmware = new CveInput(
+        "CVE-2026-86509", "2026-01-01", "Analyzed", false, null, List.of(),
+        "A flaw has been found in D-Link DIR-895L A1_102b07. Debian ships 1:2.3-4; fixed in"
+            + " commit 9fceb02d and build 12.3X48-D105. Versions 3.x are affected.",
+        List.of(), null, List.of(), List.of(), List.of());
+
+    GroundingReport r = GroundingValidator.validate(firmware, with(d -> {
+      at(d, "affected").put("vulnerable_versions", "A1_102b07; Debian 1:2.3-4; v3.x");
+      at(d, "affected").put("fixed_version", "12.3X48-D105 (commit 9fceb02d)");
+      at(d, "severity").putNull("nvd_base_score");
+      at(d, "severity").put("nvd_severity", "UNKNOWN");
+      at(d, "severity").put("adjusted_severity", "UNKNOWN");
+      at(d, "remediation").put("action", "PATCH");
+      d.put("verdict", "WARN");
+      d.put("priority", "P2");
+    }));
+
+    assertFinding(r, "affected.vulnerable_versions", Status.PASS, null);
+    assertFinding(r, "affected.fixed_version", Status.PASS, null);
+
+    GroundingReport wrongBuild = GroundingValidator.validate(firmware, with(d -> {
+      at(d, "affected").put("fixed_version", "A1_102b08");
+      at(d, "remediation").put("action", "PATCH");
+    }));
+    assertFinding(wrongBuild, "affected.fixed_version", Status.FAIL, Severity.HARD);
   }
 
   @Test

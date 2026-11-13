@@ -18,8 +18,10 @@ import io.holbein.ai.secgateway.model.SystemParam;
 
 public class AnthropicService {
   private static final String ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-  // private static final String DEFAULT_MODEL = "claude-opus-5";
-  private static final String DEFAULT_MODEL = "claude-sonnet-5";
+
+  /** The model requested on every call; the manifest records it and each result records the
+   * model id the API answered with, so the two can be compared after the fact. */
+  public static final String MODEL = "claude-sonnet-5";
 
   private final HttpClient client;
   private final String apiKey;
@@ -57,7 +59,7 @@ public class AnthropicService {
       OutputConfig outputConfig) {
     String json = Json.API.writeValueAsString(
         new CreateMessageRequest(
-            DEFAULT_MODEL, maxTokens, messageParam, systemParam, outputConfig));
+            MODEL, maxTokens, messageParam, systemParam, outputConfig));
 
     HttpRequest request = HttpRequest.newBuilder(URI.create(ANTHROPIC_API))
         .method("POST", BodyPublishers.ofString(json))

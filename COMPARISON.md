@@ -101,3 +101,14 @@ and **malformed JSON**, not wrong values. Both are failures constrained decoding
 outright. Neither is a failure that grounding or semantic validation would catch — and conversely,
 nothing in this experiment tests whether either arm gets the facts right. Schema validity and
 truthfulness are separate problems.
+
+## Open hypothesis (2026-11-13): does constrained decoding invite filling from memory?
+
+A provenance pre-screen of the prose fields (VALIDATION.md, "Prose audit") flags more outputs with
+claims absent from the input in the native arm than in the prompt arm for Opus: 18 of 26 against
+14 of 25. For Sonnet the two arms differ by one output (14 vs 13 of 26), which is noise, not a
+second data point. The pre-screen is not yet adjudicated, so this is a hypothesis, not a result:
+constrained decoding forces every field to be filled, and a field that must be filled may be
+filled from memory. If adjudication keeps the Opus gap, it is the first cost of native structured
+outputs found in this experiment; every axis above favours them. The Sonnet run's model
+attribution is itself uncertain (`data/runs/20260928-093807/PROVENANCE.md`).

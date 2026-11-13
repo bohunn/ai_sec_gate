@@ -11,7 +11,8 @@ public record TriageResult(
     List<Violation> violations,
     int attempts,
     MessageResponse.Usage usage,
-    GroundingReport grounding) {
+    GroundingReport grounding,
+    String model) {
   public enum Outcome {
     OK,
 
@@ -35,9 +36,10 @@ public record TriageResult(
       List<Violation> repaired,
       int attempts,
       MessageResponse.Usage usage,
-      GroundingReport grounding) {
+      GroundingReport grounding,
+      String model) {
     Outcome outcome = attempts == 1 ? Outcome.OK : Outcome.RECOVERED_AFTER_RETRY;
-    return new TriageResult(triage, outcome, repaired, attempts, usage, grounding);
+    return new TriageResult(triage, outcome, repaired, attempts, usage, grounding, model);
   }
 
   /** Results read from older raw files carry no grounding section. */
@@ -51,9 +53,10 @@ public record TriageResult(
       String reason,
       List<Violation> violations,
       int attempts,
-      MessageResponse.Usage usage) {
+      MessageResponse.Usage usage,
+      String model) {
     return new TriageResult(
         CveTriage.needsHumanReview(cveId, reason), outcome, violations, attempts, usage,
-        GroundingReport.EMPTY);
+        GroundingReport.EMPTY, model);
   }
 }

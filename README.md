@@ -39,8 +39,10 @@ longer. Full breakdown in [COMPARISON.md](COMPARISON.md).
    derived from the CVSS vector, `fixed_version` against the version numbers the input actually
    contains, `exploit_maturity` against the KEV listing, plus ten cross-field invariants. Each
    check reports pass, fail or unverifiable; see [VALIDATION.md](VALIDATION.md).
-5. **Retry with feedback** - if validation fails, the violations go back to the model as a
+5. **Retry with feedback** - if schema validation fails, the violations go back to the model as a
    follow-up turn. When retries run out, the result is marked as a broken gate rather than passed.
+   Grounding findings are recorded with the result (CSV, JSON, human output) and do not trigger a
+   retry or change the exit code; see VALIDATION.md, decision 2.
 
 The CLI exits with `0` (clean), `1` (blocked) or `2` (gate broken), so a pipeline can branch on the
 result.
@@ -50,17 +52,23 @@ result.
 - `fixed_version` is verified only as far as the input goes: a version number must appear
   somewhere in the record the model was sent. A real fix release the record does not mention
   cannot be told apart from an invented one without a second source (OSV).
+- Prose fields can carry true facts from the model's memory (a device being end-of-life, say)
+  that the record never stated. No truth check catches that; the prose audit in VALIDATION.md is a
+  provenance check and is manual.
 - One run per CVE is a sample, not a property. Model variance changes first-attempt results between
   runs, even on identical inputs.
-- Records without CPE configuration data give no signal for `component_type`, so those fields fall
-  back to `UNKNOWN`. These are the records where triage is hardest.
+- Records without CPE configuration data give no oracle for `vendor`, `product` and
+  `component_type`; the model infers them from the description and the validator reports them as
+  unverifiable rather than wrong. These are the records where triage is hardest.
 
 ## Next steps
 
 - Add OSV as a second source for fixed and introduced version ranges, to verify fixed versions
   the NVD record does not mention.
-- Run one batch with the new input fields (`known_exploited`, v2 user interaction) and decide
-  whether hard grounding failures should trigger a retry.
+- Run one batch with the new input fields (`known_exploited`, v2 user interaction) on the
+  unchanged schema, so the KEV effect is measured alone; then the schema changes as one step.
+- Adjudicate the prose-audit pre-screen (`data/prose_audit/`) into the five categories and report
+  the memory and deployment-assumption rates per model and arm.
 - Threat-model the trust boundary, in particular forged assistant turns when message history is
   built from untrusted data.
 - Repeat the comparison with several runs per CVE to put an error bar on the results.

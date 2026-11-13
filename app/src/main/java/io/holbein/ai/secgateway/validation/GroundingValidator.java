@@ -33,7 +33,14 @@ import io.holbein.ai.secgateway.validation.Finding.Severity;
  * holds the per-field table this class implements.
  */
 public final class GroundingValidator {
-  private static final Pattern VERSION = Pattern.compile("\\d+(?:\\.\\d+)+");
+  /**
+   * A version-like token: alphanumeric runs joined by the usual separators, with at least one
+   * digit. Catches 2.4.1, 16.0.19127.20442, A1_102b07, 1:2.3-4, 12.3X48-D105 and git SHAs; a
+   * lone year or build number counts too, which the input check tolerates.
+   */
+  private static final Pattern VERSION =
+      Pattern.compile("(?<![a-z0-9])[a-z0-9]*\\d[a-z0-9]*(?:[._:+~-][a-z0-9]+)*",
+          Pattern.CASE_INSENSITIVE);
   private static final int MAX_KEY_REFERENCES = 3;
   private static final List<String> EXPLOIT_WORDS =
       List.of("exploit", "proof of concept", "proof-of-concept", "metasploit", "in the wild");
@@ -80,14 +87,14 @@ public final class GroundingValidator {
   private final List<Finding> findings = new ArrayList<>();
   private final boolean v2;
   private final String cvssTag;
-  private final Set<String> inputVersions;
+  private final String inputText;
 
   private GroundingValidator(CveInput in, CveTriage out) {
     this.in = in;
     this.out = out;
     this.v2 = in.cvss() != null && "2.0".equals(in.cvss().version());
     this.cvssTag = in.cvss() == null ? "" : " (CVSS " + in.cvss().version() + ")";
-    this.inputVersions = versions(inputText());
+    this.inputText = inputText().toLowerCase(Locale.ROOT);
   }
 
   public static GroundingReport validate(CveInput input, CveTriage triage) {
@@ -139,7 +146,7 @@ public final class GroundingValidator {
     if (claimed.isEmpty()) {
       unverifiable("affected.vulnerable_versions", "no version numbers to check (prose only)");
     } else {
-      Set<String> missing = minus(claimed, inputVersions);
+      Set<String> missing = notInInput(claimed);
       check("affected.vulnerable_versions", Severity.SOFT, missing.isEmpty(),
           "every version number appears in the input",
           "version numbers not in the input: " + missing);
@@ -153,7 +160,7 @@ public final class GroundingValidator {
     if (fixed.isEmpty()) {
       unverifiable("affected.fixed_version", "no version number in " + quote(a.fixedVersion()));
     } else {
-      Set<String> missing = minus(fixed, inputVersions);
+      Set<String> missing = notInInput(fixed);
       check("affected.fixed_version", Severity.HARD, missing.isEmpty(),
           "version number appears in the input",
           quote(a.fixedVersion()) + " names version(s) absent from the input: " + missing
@@ -405,10 +412,22 @@ public final class GroundingValidator {
     if (text != null) {
       Matcher m = VERSION.matcher(text);
       while (m.find()) {
-        found.add(m.group());
+        found.add(m.group().toLowerCase(Locale.ROOT));
       }
     }
     return found;
+  }
+
+  /** Tokens not present in the input text; a leading "v" is dropped before comparing. */
+  private Set<String> notInInput(Set<String> tokens) {
+    Set<String> missing = new LinkedHashSet<>();
+    for (String token : tokens) {
+      String bare = token.startsWith("v") ? token.substring(1) : token;
+      if (!inputText.contains(token) && !inputText.contains(bare)) {
+        missing.add(token);
+      }
+    }
+    return missing;
   }
 
   private static Set<String> minus(Set<String> a, Collection<String> b) {

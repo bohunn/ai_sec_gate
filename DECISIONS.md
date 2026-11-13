@@ -72,6 +72,8 @@ model then only decides library vs application vs plugin within a category the d
 
 This is honest about its own limits: the signal is absent for the ten corpus CVEs with no
 configurations, which are exactly the records where triage is hardest. Those fall back to `UNKNOWN`.
+*(2026-11-12: superseded. The model infers from the description and the validator marks the field
+unverifiable; see VALIDATION.md, decision 1.)*
 
 ### Fields that duplicate the input, and why they stayed
 
@@ -96,7 +98,9 @@ learning where structured output actually fails, that is worth more than the tok
 
 ### Known weak point
 
-`fixed_version` is the highest-risk field and the only one no validator can check. NVD frequently
+`fixed_version` is the highest-risk field and the only one no validator can check. *(2026-11-12:
+superseded. It is now checked against the version tokens present in the input; see VALIDATION.md.)*
+NVD frequently
 does not publish one, the description may or may not mention it, and a plausible invented version
 number passes every check in the system. The mitigation is instruction-level only ("never guess a
 version number") plus the `data_gaps` escape hatch. Adding OSV as a second source would fix this
@@ -220,8 +224,73 @@ named for each.
   decision called the one no validator could check, was grounded in 36 of 36 non-null cases.
 - One schema change is proposed and deliberately not made: dropping the `data_gaps ⇒ LOW`
   sentence from `confidence`. It changes the schema hash and belongs at a batch boundary.
-- Noted while replaying: `GateCli.MODEL` is a constant written into the manifest, while
-  `AnthropicService.DEFAULT_MODEL` is what is sent. The two were edited independently on
-  2026-09-28 (the working tree has `claude-sonnet-5` in the service, `claude-opus-5` in the CLI),
-  so the `20260928-093807` manifest may not name the model that produced it. The CLI should read
-  the model from the service.
+- Found while replaying and fixed on 2026-11-13: `GateCli.MODEL` was a constant written into the
+  manifest while `AnthropicService.DEFAULT_MODEL` was what went to the API. They were edited
+  independently on 2026-09-28, so the `20260928-093807` manifest says `claude-opus-5` while the
+  service may already have said `claude-sonnet-5`. The source file carrying the model constant was
+  last modified twelve seconds before the run's `started_at`, which points to `claude-sonnet-5`,
+  but the batch script only rebuilds when no binary exists, so the artifacts cannot settle which
+  model answered. The run is attributed to `claude-sonnet-5` on that evidence and the attribution
+  is marked uncertain wherever the run is cited; a sidecar note next to the frozen manifest
+  (`data/runs/20260928-093807/PROVENANCE.md`) says so, because the manifest itself is not edited.
+  Now there is one constant, `AnthropicService.MODEL`, the manifest reads it, and every
+  `TriageResult` records the model id the API answered with (`model` in the raw JSON and the CSV
+  row). The requested name and the answered id are both kept because an alias can resolve to a
+  different snapshot over time.
+- The prose fields need a different test from everything above. On CVE-2026-86509 both models
+  justified the severity downgrade with "end-of-life consumer router", a true fact that is not in
+  the record. Truth checks cannot catch it and N2 passed by design. The prose audit is therefore
+  defined as a provenance test (in-input / not-in-input per claim, truth irrelevant), with the share
+  of outputs carrying a claim from memory (A) or a deployment assumption (E) as the metrics for
+  the next run; see VALIDATION.md, "Prose audit", for the five categories and the deciding test
+  for inference versus recall. Whether memory should get a labelled outlet in the schema instead of
+  a ban, and whether the basis of a severity adjustment must become structured for "memory does
+  not move severity" to be checkable, are open decision 7 there, to be settled before the golden
+  set.
+- Runs are sequenced so that one change lands per run: first the new input fields on the old
+  schema (isolates the KEV effect), then the schema changes together. See "Run plan" in
+  VALIDATION.md.
+- The replay numbers above are in-sample: the invariants were chosen on the same 103 outputs
+  that report 103/103. They say the rules are consistent with what the model has done so far,
+  not that the model will keep to them. The first batch run with the new input fields is the
+  hold-out; its numbers, not these, belong in any write-up.
+
+## 2026-11-13 - Comparability key: what must be identical for two runs to be compared
+
+### Context
+
+Two runs have been compared so far, and the comparison has already been bitten twice: the
+`20260928-093807` manifest names a model the run probably did not use, and the input the model sees
+changed on 2026-11-12 (KEV flag, v2 user interaction) without the schema hash moving. A run's
+provenance is the set of things whose divergence would invalidate a comparison with another run.
+In a cache that set is the key; here it is the same idea with the same consequence: two results
+under different keys are different experiments, whatever the folder names say.
+
+### Decision
+
+The comparability key of a run is, in order of how often it has actually drifted:
+
+| Element | Where it is recorded | Status |
+|---|---|---|
+| Model id the API answered with | `model` in every raw result and CSV row (from 2026-11-13) | recorded per result; the manifest's `model` is the *requested* name and is kept separately |
+| Output schema | `schema_sha256` in the manifest | recorded |
+| System prompt | `system_prompt` in the manifest, built from one constant plus `Invariants.BLOCK_RULE` | recorded |
+| Input shape (`CveInput` fields and caps) | **not recorded** | gap: a hash of the serialized `CveInput` for a fixed corpus record, or a version string, belongs in the manifest |
+| Corpus snapshot | `data/corpus/manifest.json` `frozen_at` | recorded, not referenced from the run manifest |
+| `max_tokens`, retry policy | `max_tokens` in the manifest; retry policy is code | partly recorded |
+| Arm (prompt / native) | per row | recorded |
+
+Anything not in the key is free to vary between runs without comment. Anything in the key that
+differs between two runs makes their numbers non-comparable on the fields that element touches,
+and the comparison has to say so (as the KEV caveat and the `PROVENANCE.md` sidecar now do).
+
+### Consequences
+
+- The run manifest should gain the input-shape hash and a reference to the corpus `frozen_at`;
+  until it does, the input shape is tracked by date in the ADRs.
+- The intermediate run planned in VALIDATION.md ("Run plan") changes exactly one key element
+  (input shape) against the `20260928-093807` baseline; the schema and prompt changes follow in a
+  separate run so that each key element moves alone.
+- Deployment context (how exposed the component is in the consuming system) is not in the key and
+  not in the input, and the prose audit shows the model inventing it. If it is ever supplied, it
+  enters through the input and therefore through the key, never through the prompt alone.

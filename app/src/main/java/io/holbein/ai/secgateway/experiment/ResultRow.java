@@ -19,7 +19,7 @@ public final class ResultRow {
           "input_tokens", "output_tokens", "latency_ms",
           "verdict", "priority", "confidence", "adjusted_severity", "component_type", "mechanism",
           "grounding_hard_fail", "grounding_soft_fail", "grounding_unverifiable",
-          "first_hard_fail_path");
+          "first_hard_fail_path", "model");
 
   private ResultRow() {}
 
@@ -60,7 +60,8 @@ public final class ResultRow {
         grounding == null ? "" : String.valueOf(grounding.hardFailures().size()),
         grounding == null ? "" : String.valueOf(grounding.softFailures().size()),
         grounding == null ? "" : String.valueOf(grounding.unverifiable().size()),
-        Csv.escape(firstHard == null ? "" : firstHard.path()));
+        Csv.escape(firstHard == null ? "" : firstHard.path()),
+        Csv.escape(result.model()));
   }
 
   private static String cell(CveTriage triage, java.util.function.Function<CveTriage, String> of) {

@@ -39,6 +39,7 @@ public class TriageService {
     int feedbackRetriesLeft = policy.feedbackRetries();
     int truncationRetriesLeft = policy.truncationRetries();
     MessageResponse.Usage usage = null;
+    String model = null;
     List<Violation> firstFailure = List.of();
 
     while (true) {
@@ -49,19 +50,20 @@ public class TriageService {
         response = sender.send(List.copyOf(conversation), system, budget);
       } catch (ApiException e) {
         return TriageResult.failed(
-            input.cveId(), TriageResult.Outcome.API_ERROR, e.getMessage(), List.of(), attempt, usage);
+            input.cveId(), TriageResult.Outcome.API_ERROR, e.getMessage(), List.of(), attempt, usage, model);
       } catch (RuntimeException e) {
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.API_ERROR,
-            e.getClass().getSimpleName() + ": " + e.getMessage(), List.of(), attempt, usage);
+            e.getClass().getSimpleName() + ": " + e.getMessage(), List.of(), attempt, usage, model);
       }
 
       usage = add(usage, response.usage());
+      model = response.model();
 
       if ("refusal".equals(response.stopReason())) {
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.REFUSED,
-            "the model declined to answer", List.of(), attempt, usage);
+            "the model declined to answer", List.of(), attempt, usage, model);
       }
 
       if ("max_tokens".equals(response.stopReason())) {
@@ -73,7 +75,7 @@ public class TriageService {
         }
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.TRUNCATED,
-            "response hit the max_tokens ceiling", List.of(), attempt, usage);
+            "response hit the max_tokens ceiling", List.of(), attempt, usage, model);
       }
 
       String document;
@@ -82,7 +84,7 @@ public class TriageService {
       } catch (IllegalStateException e) {
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.API_ERROR, e.getMessage(), List.of(), attempt,
-            usage);
+            usage, model);
       }
 
       List<Violation> violations;
@@ -100,7 +102,7 @@ public class TriageService {
         // whether a grounding failure should cost another attempt is a separate decision
         // (VALIDATION.md, decision 2).
         GroundingReport grounding = GroundingValidator.validate(input, triage);
-        return TriageResult.valid(triage, firstFailure, attempt, usage, grounding);
+        return TriageResult.valid(triage, firstFailure, attempt, usage, grounding, model);
       }
       if (firstFailure.isEmpty()) {
         firstFailure = violations;
@@ -111,7 +113,7 @@ public class TriageService {
             input.cveId(), TriageResult.Outcome.VALIDATION_EXHAUSTED,
             violations.size() + " unresolved schema violation(s) after " + attempt
                 + " attempt(s)",
-            violations, attempt, usage);
+            violations, attempt, usage, model);
       }
       feedbackRetriesLeft--;
 
