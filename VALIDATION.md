@@ -36,11 +36,10 @@ failure is a flag for a reviewer. Soft failures never make a result ungrounded.
 ## Per-field table
 
 Evidence column: replay of the two recorded runs (`20260919-000440`, `20260928-093807`), 103
-trustworthy outputs, 26 CVEs × 2 arms × 2 runs minus one prompt-arm exhaustion. The two runs are
-two models: `20260919-000440` is `claude-opus-5`; `20260928-093807` is attributed to
-`claude-sonnet-5` with the uncertainty described in `data/runs/20260928-093807/PROVENANCE.md` (its
-manifest says `claude-opus-5`). Where a CVE differs between runs, that is a cross-model difference
-first. **These numbers are in-sample**:
+trustworthy outputs, 26 CVEs × 2 arms × 2 runs minus one prompt-arm exhaustion. Both runs are
+`claude-opus-5` (the second was confirmed against the API usage record; see
+`data/runs/20260928-093807/PROVENANCE.md`). Where a CVE differs between runs, that is run-to-run
+variance of one model on byte-identical input. **These numbers are in-sample**:
 the asserts and invariants were tuned on the same outputs. They show the rules are consistent with
 the recorded behaviour, not that they predict the next run. The next batch, with the new input
 fields, is the hold-out.
@@ -149,7 +148,8 @@ names what to flip if the call goes the other way.
    (CRITICAL, no published fix): urgent but un-blockable under the system-prompt rule. That is a
    meaningful combination, so priority must not be collapsed into verdict. N8 is a consistency
    band, not a rubric: it holds 103/103 today and still does not decide CVE-2026-86509, where the
-   two models answered P1 and P2 inside the same band. The rubric is open decision 8.
+   same model answered P1 and P2 across two runs, both inside the band. The rubric is open
+   decision 8.
 
 6. **Empty-fallback semantics**, one row per ❓ in the original table:
    - CPE empty → `vendor` / `product`: UNVERIFIABLE, null not required (the description may name
@@ -166,6 +166,31 @@ names what to flip if the call goes the other way.
      `confidence` field description. The model ignores it in 57% of cases and the rule is too
      strict (every realistic record has some gap). Removing it changes the schema hash and so the
      comparability of runs; do it at the start of the next batch, not between runs.
+
+## Noise floor: the replication pair
+
+Runs `20260919-000440` and `20260928-093807` are the same model, schema, prompt and corpus, so the
+difference between them on any metric is the only measurement of run-to-run variance this project
+has. Rule for every later run: a difference from the baseline **smaller than the spread between
+these two runs on the same metric is noise** and is reported as noise. The spread is a floor from
+two samples, not a confidence interval: below it is certainly noise; above it is not automatically
+an effect.
+
+| Metric (per arm) | native 0919 | native 0928 | spread | prompt 0919 | prompt 0928 | spread |
+|---|---|---|---|---|---|---|
+| trustworthy outputs | 26 | 26 | | 25 | 26 | |
+| outputs with ≥1 hard grounding failure | 3 | 2 | 1 | 2 | 2 | 0 |
+| hard-failure lines | 3 | 2 | 1 | 3 | 3 | 0 |
+| soft-failure lines | 15 | 14 | 1 | 9 | 19 | 10 |
+| outputs with ≥1 prose-audit candidate (pre-screen) | 18 | 14 | 4 | 14 | 13 | 1 |
+| verdict BLOCK / WARN / ALLOW / NHR | 5 / 19 / 2 / 0 | 5 / 19 / 2 / 0 | 0 | 5 / 17 / 2 / 1 | 5 / 18 / 2 / 1 | 1 |
+| priority P0 / P1 / P2 / P3 | 5 / 3 / 10 / 8 | 5 / 2 / 8 / 11 | 3 | 4 / 5 / 6 / 10 | 4 / 7 / 7 / 8 | 2 |
+| confidence HIGH / MEDIUM / LOW | 6 / 16 / 4 | 6 / 16 / 4 | 0 | 3 / 9 / 13 | 3 / 7 / 16 | 3 |
+
+Two readings follow immediately. The verdict distribution is stable to the output across runs,
+so a verdict change in a later run is a signal. The native-arm prose-candidate count moved by 4
+between identical runs, which is exactly the "native 18 vs prompt 14" gap in the first run: that
+gap never stood above the noise floor, and COMPARISON.md says so.
 
 ## Prose audit: provenance, not truth
 
@@ -192,11 +217,12 @@ A is what "do not fill gaps from memory" forbids. E belongs in the input, in the
 or outside the LLM; never in prose.
 
 **Metric.** Share of outputs with at least one A claim, and separately with at least one E claim,
-per model × arm and per field. The split by arm is kept on purpose. In the pre-screen the native
-arm has more flagged outputs than the prompt arm for Opus (18 of 26 vs 14 of 25); for Sonnet the
-difference is one output (14 vs 13 of 26) and is noise. The Opus gap is the hypothesis for
-COMPARISON.md: constrained decoding, by forcing every field to be filled, may invite filling from
-memory. Adjudication should test it on Opus and not read the Sonnet pair as confirmation.
+per run × arm and per field. The split by arm is kept on purpose. In the pre-screen the native
+arm has more flagged outputs than the prompt arm in the first run (18 of 26 vs 14 of 25); in the
+second run, same model and same input, the difference is one output (14 vs 13 of 26). The first run
+suggests a hypothesis for COMPARISON.md (constrained decoding, by forcing every field to be filled,
+may invite filling from memory); the second run does not replicate it. Adjudication decides whether
+the first-run gap survives once the noise lines are removed.
 
 **Entry 1 (2026-11-13), CVE-2026-86509.** `adjustment_reason` says the device is an "end-of-life
 consumer router" (run 0928) / "legacy consumer router" (run 0919); `remediation.detail` says
@@ -208,8 +234,8 @@ Three things make it the reference case:
   `adjusted_severity`, which N8 then uses to bound `priority`. Judgement fields are load-bearing by
   adjacency. N2 passed because it checks the length of a reason, not its origin; that is what N2
   is for, and it is why this audit is a separate mechanism, not a future invariant.
-- Both models, both runs, the same claim. Agreement between models is not grounding; here it is
-  the signature of shared training data, the one input to this pipeline that is neither frozen nor
+- Both runs, both arms, the same claim. Agreement between runs is not grounding; here it is the
+  signature of training data, the one input to this pipeline that is neither frozen nor
   controlled. "Do not fill from memory" is a security control, not a style rule.
 - An automatic pre-screen (`data/prose_audit/candidates-20261113.md`: world-knowledge markers,
   deployment-assumption markers, dates and capitalised names absent from the input) flags 59 of 103
@@ -237,7 +263,8 @@ built with the answer, not before it.
 
 **Open decision 8 (blocks the golden set).** A priority rubric that decides a case the N8 band
 leaves open. Test case: CVE-2026-86509 (WARN, adjusted HIGH, published exploit in the description,
-no fix) came back P1 three times and P2 once across the two models; both are inside the HIGH band.
+no fix) came back P1 three times and P2 once across two runs of the same model; both are inside
+the HIGH band.
 A rubric that does not return exactly one of them for this record is not finished. Candidate for
 discussion, not adopted: P0 when BLOCK or KEV-listed; P1 when adjusted ≥ HIGH and the input carries
 exploit evidence (KEV, Exploit tag, or the description); P2 when adjusted HIGH without such evidence
@@ -247,9 +274,10 @@ returns P1. The golden set cannot be built until a rubric is adopted, because th
 
 **Run plan.** The next run must not change three things at once. Three axes are pending: the new
 input fields (KEV, v2 user interaction), the `confidence` description change, and the memory outlet
-of decision 7. An intermediate run on `claude-sonnet-5` with the *old* schema and the *new* input
-isolates the KEV effect for a fraction of a dollar; the schema changes go in the run after it, as
-one documented step. Single runs are cheap; mixed causes are expensive.
+of decision 7. An intermediate run on the **same model as the baseline** (`claude-opus-5`) with
+the *old* schema and the *new* input isolates the KEV effect; running it on another model would
+move two key elements at once. The schema changes go in the run after it, as one documented step.
+Single runs are cheap; mixed causes are expensive.
 
 ## Running it
 

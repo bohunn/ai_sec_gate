@@ -227,17 +227,16 @@ named for each.
 - Found while replaying and fixed on 2026-11-13: `GateCli.MODEL` was a constant written into the
   manifest while `AnthropicService.DEFAULT_MODEL` was what went to the API. They were edited
   independently on 2026-09-28, so the `20260928-093807` manifest says `claude-opus-5` while the
-  service may already have said `claude-sonnet-5`. The source file carrying the model constant was
-  last modified twelve seconds before the run's `started_at`, which points to `claude-sonnet-5`,
-  but the batch script only rebuilds when no binary exists, so the artifacts cannot settle which
-  model answered. The run is attributed to `claude-sonnet-5` on that evidence and the attribution
-  is marked uncertain wherever the run is cited; a sidecar note next to the frozen manifest
-  (`data/runs/20260928-093807/PROVENANCE.md`) says so, because the manifest itself is not edited.
-  Now there is one constant, `AnthropicService.MODEL`, the manifest reads it, and every
+  service had just been edited to say `claude-sonnet-5`. The source tree could not settle it (the
+  batch script only rebuilds when no binary exists); the API usage record for that day did: only
+  `claude-opus-5` was called, and its output-token total equals the run's `results.csv` sum exactly.
+  The manifest was right and the edit never reached a running binary. The sidecar
+  `data/runs/20260928-093807/PROVENANCE.md` records the doubt and its resolution, because the
+  manifest itself is never edited. Now there is one constant, `AnthropicService.MODEL`, the manifest reads it, and every
   `TriageResult` records the model id the API answered with (`model` in the raw JSON and the CSV
   row). The requested name and the answered id are both kept because an alias can resolve to a
   different snapshot over time.
-- The prose fields need a different test from everything above. On CVE-2026-86509 both models
+- The prose fields need a different test from everything above. On CVE-2026-86509 both runs
   justified the severity downgrade with "end-of-life consumer router", a true fact that is not in
   the record. Truth checks cannot catch it and N2 passed by design. The prose audit is therefore
   defined as a provenance test (in-input / not-in-input per claim, truth irrelevant), with the share
@@ -260,8 +259,9 @@ named for each.
 ### Context
 
 Two runs have been compared so far, and the comparison has already been bitten twice: the
-`20260928-093807` manifest names a model the run probably did not use, and the input the model sees
-changed on 2026-11-12 (KEV flag, v2 user interaction) without the schema hash moving. A run's
+`20260928-093807` manifest's model name could not be trusted from the source tree alone and had
+to be confirmed against the API usage record, and the input the model sees changed on 2026-11-12
+(KEV flag, v2 user interaction) without the schema hash moving. A run's
 provenance is the set of things whose divergence would invalidate a comparison with another run.
 In a cache that set is the key; here it is the same idea with the same consequence: two results
 under different keys are different experiments, whatever the folder names say.
@@ -273,10 +273,10 @@ The comparability key of a run is, in order of how often it has actually drifted
 | Element | Where it is recorded | Status |
 |---|---|---|
 | Model id the API answered with | `model` in every raw result and CSV row (from 2026-11-13) | recorded per result; the manifest's `model` is the *requested* name and is kept separately |
-| Output schema | `schema_sha256` in the manifest | recorded |
+| Output schema | `schema_sha256` in the manifest; pinned to `81f1521f6e417e68` by a test | recorded, deterministic by construction |
 | System prompt | `system_prompt` in the manifest, built from one constant plus `Invariants.BLOCK_RULE` | recorded |
-| Input shape (`CveInput` fields and caps) | **not recorded** | gap: a hash of the serialized `CveInput` for a fixed corpus record, or a version string, belongs in the manifest |
-| Corpus snapshot | `data/corpus/manifest.json` `frozen_at` | recorded, not referenced from the run manifest |
+| Input shape (`CveInput` fields and caps) | `input_shape_sha256` in the manifest (from 2026-11-13): hash of a fully populated `CveInput` sample plus the caps; pinned to `bc30ad24d93e88a4` by a test | recorded; see the next entry for the day it was not deterministic |
+| Corpus snapshot | `data/corpus/manifest.json` `frozen_at`, copied into the run manifest as `corpus_frozen_at` (from 2026-11-13) | recorded |
 | `max_tokens`, retry policy | `max_tokens` in the manifest; retry policy is code | partly recorded |
 | Arm (prompt / native) | per row | recorded |
 
@@ -286,11 +286,61 @@ and the comparison has to say so (as the KEV caveat and the `PROVENANCE.md` side
 
 ### Consequences
 
-- The run manifest should gain the input-shape hash and a reference to the corpus `frozen_at`;
-  until it does, the input shape is tracked by date in the ADRs.
+- The run manifest carries the input-shape hash and the corpus `frozen_at` from 2026-11-13. The
+  two recorded runs predate both fields; their input shape is the one before the KEV and v2
+  user-interaction fields were added.
 - The intermediate run planned in VALIDATION.md ("Run plan") changes exactly one key element
   (input shape) against the `20260928-093807` baseline; the schema and prompt changes follow in a
   separate run so that each key element moves alone.
+- Extending the corpus does not break comparability on the records already in it, provided those
+  records stay byte-identical. `freeze` never re-fetches a record that is on disk, keeps
+  `frozen_at` as the date of the first freeze, adds `last_extended_at` when new records arrive, and
+  writes each record's SHA-256 into the corpus manifest so "byte-identical" is checkable rather
+  than assumed. Re-freezing an existing record is a key change; adding a hold-out is not.
+- Two runs under an identical key (`20260919-000440`, `20260928-093807`) are the project's only
+  measurement of run-to-run variance; the spread between them per metric is the noise floor for
+  every later comparison (VALIDATION.md, "Noise floor").
 - Deployment context (how exposed the component is in the consuming system) is not in the key and
   not in the input, and the prose audit shows the model inventing it. If it is ever supplied, it
   enters through the input and therefore through the key, never through the prompt alone.
+
+## 2026-11-13 - The input-shape hash was non-deterministic for one day
+
+### What happened
+
+`input_shape_sha256` was added to the run manifest on 2026-11-13 as the input-shape element of
+the comparability key. Its value differed between two consecutive invocations of `app manifest`
+with no code change in between: `bb84c1313802b936`, then `bc30ad24d93e88a4`. The cause was a
+`Map.of` holding the three input caps: immutable maps iterate in an order randomized per JVM
+process, so the serialized sample, and its hash, changed from process to process. A unit test that
+serialized the shape twice in one process passed, because within one JVM the order is stable.
+
+No run used the value. It existed for a day in the working tree and in no manifest under
+`data/runs/`.
+
+### Why it matters more than a bug
+
+A missing hash is a visible gap. A random hash is false precision: two runs with the same input
+shape would have shown different hashes, and a reader would have concluded the shape had changed
+and explained a difference with an artifact that measured nothing. The same failure class as a
+single model run read as a property: one observation of a non-deterministic process looks like a
+value and is a sample.
+
+### What changed
+
+- Insertion-ordered maps in `CveInput.shape()` and in the corpus manifest; `Map.of` is not used
+  on anything that is hashed or written as provenance.
+- Both key hashes are pinned to constants by tests (`theInputShapeHashIsPinned`,
+  `theSchemaHashIsPinned`). A pinned test does two jobs: it fails on the first CI run on another
+  JVM if serialization is not deterministic, and it fails on any later change of shape, forcing the
+  constant and a dated entry here to be updated together. The schema hash was already stable
+  across the two recorded runs; the pin turns "stable twice" into a property checked on every
+  build, and the stability has a construction behind it (insertion-ordered property map, fixed
+  property order on the schema record, record components and enum constants in declaration order).
+- Measured, not assumed: the serialized user turn for one corpus record (`app input CVE-2024-28088`)
+  hashes identically across three processes (`47a5beeaad2b5240`), so "the inputs are byte-identical"
+  in COMPARISON.md is a measurement. Record serialization follows component order and every
+  collection in `CveInput` is insertion-ordered.
+- Rule carried forward: `RUNS >= 3` applies to the pipeline's own determinism, not only to the
+  model. Anything written as provenance is checked across independent processes before it is
+  trusted.

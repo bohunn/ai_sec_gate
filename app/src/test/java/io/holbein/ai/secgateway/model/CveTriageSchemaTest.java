@@ -46,6 +46,16 @@ class CveTriageSchemaTest {
   }
 
   @Test
+  void theSchemaHashIsPinned() {
+    assertEquals(
+        "81f1521f6e417e68",
+        Json.sha256(CveTriageSchema.schema()),
+        "The output schema changed (or its serialization is not deterministic across JVMs). If the"
+            + " change is intended: update this constant and add a dated DECISIONS.md entry; the"
+            + " manifest of every run records this value.");
+  }
+
+  @Test
   void schemaKeywordsSurviveTheSnakeCaseMapper() {
     assertTrue(SCHEMA.has("additionalProperties"), "additionalProperties was renamed");
     assertNull(SCHEMA.get("additional_properties"));

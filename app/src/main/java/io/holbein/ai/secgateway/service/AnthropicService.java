@@ -21,7 +21,7 @@ public class AnthropicService {
 
   /** The model requested on every call; the manifest records it and each result records the
    * model id the API answered with, so the two can be compared after the fact. */
-  public static final String MODEL = "claude-sonnet-5";
+  public static final String MODEL = "claude-opus-5";
 
   private final HttpClient client;
   private final String apiKey;

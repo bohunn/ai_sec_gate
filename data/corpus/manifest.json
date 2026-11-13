@@ -3,186 +3,212 @@
   "count" : 26,
   "records" : {
     "CVE-2026-20963" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Analyzed",
       "stratum" : "control",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "c98e771e6b878fcda31a8cb3cedff63a9ecf5d43ef3fdacff0aeeb68ccf2de77"
     },
     "CVE-2026-24061" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Analyzed",
       "stratum" : "control",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "application", "operating_system" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application", "operating_system" ],
+      "sha256" : "a5d13828a1328ecce0097f217227ab6841e76abf9dae9dd4c6fece9a3137ea9f"
     },
     "CVE-2026-58234" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Awaiting Analysis",
       "stratum" : "control",
+      "vuln_status" : "Awaiting Analysis",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ ],
+      "sha256" : "1f16904d55e479071a47b7f5678ba591df5ff461466c63817675665bf613f72a"
     },
     "CVE-2026-76960" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Awaiting Analysis",
       "stratum" : "control",
+      "vuln_status" : "Awaiting Analysis",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ ],
+      "sha256" : "ff88afff54e47db0c1775f68e943331fa88a50b791e1d1e348d2ac15dc7ada98"
     },
     "CVE-2026-79379" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Deferred",
       "stratum" : "sparse",
+      "vuln_status" : "Deferred",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ ],
+      "sha256" : "ff352b301d392086b490094afdc40638466f0586ce3c5da338cad962c8827cdb"
     },
     "CVE-2026-79577" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Deferred",
       "stratum" : "sparse",
+      "vuln_status" : "Deferred",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ ],
+      "sha256" : "00376f2b22031273c98b1638eef0e8306c5ed7815aff1876a05027e44123f07c"
     },
     "CVE-2026-84282" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Deferred",
       "stratum" : "sparse",
+      "vuln_status" : "Deferred",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ ],
+      "sha256" : "1f6215b64691b93f59ffbeba66853d478baa9e71043bd04223617398495993ce"
     },
     "CVE-2024-12366" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Deferred",
       "stratum" : "sparse",
+      "vuln_status" : "Deferred",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ ],
+      "sha256" : "e8f988830b3d350b468123a5696a4fbda84c0f91c88753856553af2d3647f822"
     },
     "CVE-2026-70613" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Rejected",
       "stratum" : "reject",
+      "vuln_status" : "Rejected",
       "has_cvss" : false,
-      "cpe_categories" : [ ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ ],
+      "sha256" : "a1e923595a7911e680609f4397c1024b74b12694e2eaee5b326d84574d5e26ed"
     },
     "CVE-2008-1112" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Rejected",
       "stratum" : "reject",
+      "vuln_status" : "Rejected",
       "has_cvss" : false,
-      "cpe_categories" : [ ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ ],
+      "sha256" : "4a72470fd24c44d1c97405a4b57475b778ae155624256de3d3d7a25229196e50"
     },
     "CVE-2001-1533" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Modified",
       "stratum" : "disputed",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "9c1537b7c8e60e27621f9539575c8931de1fb4fa018196a9a324c8efe1eedc55"
     },
     "CVE-2002-1774" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Modified",
       "stratum" : "disputed",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "0f6698a96961815a5de139a20a7254201a836374c37eab552aa8832b3a3c55c8"
     },
     "CVE-2007-6252" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Modified",
       "stratum" : "metrics",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "cb929c7fec92f0a2e2177ed8b2dcd601eb4e8e083b3b096638dd685ca1458aa5"
     },
     "CVE-2008-1113" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Modified",
       "stratum" : "metrics",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "c532620ceccf1543fea14931431796b3c9c151a0891035950cf304159a594847"
     },
     "CVE-2026-82710" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Deferred",
       "stratum" : "metrics",
+      "vuln_status" : "Deferred",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ ],
+      "sha256" : "ec6b2f3fe5038d8ade4eab7b3029430acc662e7bfadaec3d52467a5d53097349"
     },
     "CVE-2026-86509" : {
-      "cwe_count" : 2,
-      "vuln_status" : "Deferred",
       "stratum" : "metrics",
+      "vuln_status" : "Deferred",
       "has_cvss" : true,
-      "cpe_categories" : [ ]
+      "cwe_count" : 2,
+      "cpe_categories" : [ ],
+      "sha256" : "dc9551e5840560f562f2d45011037550fc882b92bf087b7bd775d130de79ecd0"
     },
     "CVE-2020-1631" : {
-      "cwe_count" : 2,
-      "vuln_status" : "Analyzed",
       "stratum" : "scale",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "operating_system" ]
+      "cwe_count" : 2,
+      "cpe_categories" : [ "operating_system" ],
+      "sha256" : "30c050f5efaa766dc356083ab7ad085f022082813f27ad4973d1d0f1082c15f5"
     },
     "CVE-2008-1146" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Modified",
       "stratum" : "scale",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "b9afd77484d52af9ae15817fc28827b211be3e09687a8544b061f7426113cf8d"
     },
     "CVE-2026-46251" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Analyzed",
       "stratum" : "scale",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "operating_system" ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ "operating_system" ],
+      "sha256" : "f9f8c9d80b7c89ce3bbd8b79ee595b845960b9e317e74174ff9e93a5421ba0cb"
     },
     "CVE-2008-1115" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Modified",
       "stratum" : "cwe",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "operating_system" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "operating_system" ],
+      "sha256" : "49bbabc56484409a069727d3bc908a23441e2e2d5eff3152bc48648aa5bf988b"
     },
     "CVE-2007-6703" : {
-      "cwe_count" : 0,
-      "vuln_status" : "Modified",
       "stratum" : "cwe",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 0,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "f5c053011ba2c42a3be05fb5125cbf6731f2770c584d66523d6295b2e84d7d74"
     },
     "CVE-2024-31224" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Analyzed",
       "stratum" : "adversarial",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "8a78377e676e07770976eced723909b74138dd2e70721fbf04f5fc719a16a2d6"
     },
     "CVE-2024-28088" : {
-      "cwe_count" : 2,
-      "vuln_status" : "Analyzed",
       "stratum" : "adversarial",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 2,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "46359ab36b27e5ba8f403249dbd0e92dde0d0b4c9e8491a76b6d7e3641849938"
     },
     "CVE-2024-28224" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Analyzed",
       "stratum" : "adversarial",
+      "vuln_status" : "Analyzed",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "852f8cadd0e4e1163cd11f3624e376c996a963b4b0a3aa48ecf7a93cedcc1823"
     },
     "CVE-2024-36422" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Modified",
       "stratum" : "stability",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "221f787b7d05e5e350a1b3966ec5c943579c6c87e55289ff8c53fd54b194a560"
     },
     "CVE-2024-36423" : {
-      "cwe_count" : 1,
-      "vuln_status" : "Modified",
       "stratum" : "stability",
+      "vuln_status" : "Modified",
       "has_cvss" : true,
-      "cpe_categories" : [ "application" ]
+      "cwe_count" : 1,
+      "cpe_categories" : [ "application" ],
+      "sha256" : "4cb4a449015a7dfb8c16504913d5d2496e3b314a4f6632f9f3d05b4b635ecf1f"
     }
   }
 }

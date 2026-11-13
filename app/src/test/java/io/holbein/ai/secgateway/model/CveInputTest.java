@@ -123,6 +123,28 @@ class CveInputTest {
   }
 
   @Test
+  void theShapeSampleNamesEveryFieldSoItsHashTracksTheInputShape() {
+    String json = Json.API.writeValueAsString(CveInput.shape());
+
+    for (String field : List.of("cve_id", "known_exploited", "kev_date_added", "cvss",
+        "vector_string", "affected", "end_excluding", "references", "tags", "cpe_categories",
+        "max_description_chars", "max_affected_ranges", "max_references")) {
+      assertTrue(json.contains("\"" + field + "\""), field + " missing from the shape sample");
+    }
+    assertEquals(json, Json.API.writeValueAsString(CveInput.shape()), "must be deterministic");
+  }
+
+  @Test
+  void theInputShapeHashIsPinned() {
+    assertEquals(
+        "bc30ad24d93e88a4",
+        Json.sha256(CveInput.shape()),
+        "The input shape changed (or its serialization is not deterministic across JVMs). If the"
+            + " change is intended: update this constant and add a dated DECISIONS.md entry, because"
+            + " runs before and after it are not comparable on the fields that moved.");
+  }
+
+  @Test
   void survivesACveWithNoMetricsOrConfigurations() {
     CveInput input = CveInput.from(cveWithDescription("CVE-0-2", "Not yet analyzed."));
 

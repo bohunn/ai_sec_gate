@@ -57,6 +57,7 @@ public class GateCli {
       case "csv-header" -> System.out.println(ResultRow.header());
       case "manifest" -> manifest();
       case "ground" -> ground(args);
+      case "input" -> input(args);
       case "", "help", "--help" -> usage();
       default -> triage(args);
     }
@@ -69,6 +70,7 @@ public class GateCli {
           app freeze                fetch the corpus from NVD once into data/corpus
           app csv-header            print the results.csv header
           app manifest              print run provenance as JSON
+          app input <CVE-ID>        print the exact user turn the model receives for a frozen CVE
           app ground <run-dir>      replay a run's raw results through the grounding validator
                                     against the frozen corpus (no API calls); --soft lists
                                     soft failures too
@@ -80,6 +82,8 @@ public class GateCli {
           --format human|csv|json   output shape (default human)
           --run N                   repetition index, recorded in the csv row (default 1)
           --raw DIR                 also write the full result as DIR/<arm>-<cve>.json
+          --record FILE             read the NVD record from FILE instead of the corpus or NVD
+                                    (crafted records for ATTACKS.md)
 
         Exit: 0 clean, 1 blocked, 2 gate broken. Requires ANTHROPIC_API_KEY except for freeze.""");
   }
@@ -96,18 +100,23 @@ public class GateCli {
     manifest.put("started_at", java.time.Instant.now().toString());
     manifest.put("model", AnthropicService.MODEL);
     manifest.put("max_tokens", MAX_TOKENS);
-    manifest.put("schema_sha256", schemaHash());
+    manifest.put("schema_sha256", Json.sha256(CveTriageSchema.schema()));
+    manifest.put("input_shape_sha256", Json.sha256(CveInput.shape()));
+    manifest.put("corpus_frozen_at", corpusFrozenAt());
     manifest.put("system_prompt", SYSTEM.stream().map(SystemParam::text).toList());
     System.out.println(Json.API.writerWithDefaultPrettyPrinter().writeValueAsString(manifest));
   }
 
-  private static String schemaHash() throws Exception {
-    byte[] digest =
-        java.security.MessageDigest.getInstance("SHA-256")
-            .digest(
-                Json.API.writeValueAsString(CveTriageSchema.schema())
-                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    return java.util.HexFormat.of().formatHex(digest).substring(0, 16);
+  private static String corpusFrozenAt() {
+    Path manifest = DATA.resolve("corpus").resolve("manifest.json");
+    if (!Files.isRegularFile(manifest)) {
+      return null;
+    }
+    try {
+      return Json.API.readTree(Files.readString(manifest)).path("frozen_at").asString(null);
+    } catch (IOException e) {
+      return null;
+    }
   }
 
   private static void triage(String[] args) throws Exception {
@@ -116,11 +125,15 @@ public class GateCli {
     String source = flag(args, "--source", "frozen");
     String format = flag(args, "--format", "human");
     String raw = flag(args, "--raw", null);
+    String record = flag(args, "--record", null);
     int run = Integer.parseInt(flag(args, "--run", "1"));
 
     CveCorpus corpus = new CveCorpus(DATA);
     NvdaService nvd = new NvdaService();
-    CveInput input = "nvd".equals(source) ? nvd.fetchCve(cveId) : corpus.get(cveId, nvd);
+    CveInput input =
+        record != null
+            ? NvdaService.parse(cveId, Files.readString(Path.of(record)))
+            : "nvd".equals(source) ? nvd.fetchCve(cveId) : corpus.get(cveId, nvd);
 
     AnthropicService anthropic = new AnthropicService();
     MessageSender sender =
@@ -174,6 +187,15 @@ public class GateCli {
     System.out.println("Grounding: " + grounding.summary());
     grounding.hardFailures().forEach(f -> System.out.println("  " + f.format()));
     grounding.softFailures().forEach(f -> System.out.println("  " + f.format()));
+  }
+
+  /** The user turn, byte for byte, so its identity across processes and arms can be measured. */
+  private static void input(String[] args) {
+    if (args.length < 2) {
+      System.err.println("usage: app input <CVE-ID>");
+      System.exit(2);
+    }
+    System.out.print(Json.API.writeValueAsString(new CveCorpus(DATA).load(args[1])));
   }
 
   /**

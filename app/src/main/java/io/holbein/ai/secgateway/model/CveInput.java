@@ -1,8 +1,10 @@
 package io.holbein.ai.secgateway.model;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -52,6 +54,33 @@ public record CveInput(
   }
 
   public record Reference(String url, List<String> tags) {
+  }
+
+  /**
+   * The shape of the input as the model sees it: a sample with every field populated, plus the
+   * caps. Its serialization changes exactly when a field, a nested field or a cap changes, so its
+   * hash is the input-shape element of a run's comparability key (DECISIONS.md, 2026-11-13).
+   */
+  public static Map<String, Object> shape() {
+    CveInput sample =
+        new CveInput(
+            "CVE-0000-0000", "2000-01-01", "Analyzed", true, "2000-01-02", List.of("tag"),
+            "description", List.of("CWE-0"),
+            new Cvss("3.1", "CVSS:3.1/", 0.0, "LOW", "NETWORK", "LOW", "NONE", "NONE", "NONE",
+                "NONE", "NONE"),
+            List.of("application"),
+            List.of(new AffectedRange("cpe:2.3:a:v:p:*:*:*:*:*:*:*:*", "1", "1", "1", "1")),
+            List.of(new Reference("https://example.invalid/", List.of("tag"))));
+    // Insertion-ordered maps only: Map.of iterates in a per-JVM random order, which would make
+    // the hash differ between processes.
+    Map<String, Object> caps = new LinkedHashMap<>();
+    caps.put("max_description_chars", MAX_DESCRIPTION_CHARS);
+    caps.put("max_affected_ranges", MAX_AFFECTED_RANGES);
+    caps.put("max_references", MAX_REFERENCES);
+    Map<String, Object> shape = new LinkedHashMap<>();
+    shape.put("fields", sample);
+    shape.put("caps", caps);
+    return shape;
   }
 
   public static CveInput from(NvdCveResponse.Cve cve) {
