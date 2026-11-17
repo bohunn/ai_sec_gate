@@ -14,7 +14,7 @@ from `data/corpus/`, so the inputs are byte-identical. Raw data: `data/runs/2026
 | Input tokens | 197,103 | 135,424 |
 | Output tokens | 53,435 | 25,547 |
 | Cost at Opus 5 rates | $2.32 | $1.32 |
-| Median latency per CVE | 26.3 s | 12.6 s |
+| Median latency per CVE | 26.4 s | 12.6 s |
 
 Native structured outputs never failed validation, which is what constrained decoding guarantees
 by construction. The result worth reporting is not that it won but by how much, and what the
@@ -46,7 +46,7 @@ Even the four `control` CVEs — fully scored, clearly described — failed half
 
 The invented fields were `severity.exploit_note`, `severity.exploit_maturity_note`,
 `severity.attack_vector_note`, `exploitability.exploit_maturity_note`,
-`exploitability.__comment`, and one literally named `" data_gaps"` with a leading space. **Six
+`exploitability.__comment`, and one literally named `" data_gaps"` with a leading space. **Seven
 failures, six different invented names.** The model reaches for somewhere to editorialise and
 invents a plausible key each time, so no amount of prompt tuning enumerates them away. This is
 exactly what `additionalProperties: false` exists to catch, and constrained decoding makes it

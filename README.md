@@ -21,7 +21,7 @@ the same frozen NVD records. The only difference between them is how JSON output
 | Usable after one retry round with validator feedback | 25/26 | 26/26 |
 | Total attempts | 43 | 26 |
 | Cost | $2.32 (+75%) | $1.32 |
-| Median latency per CVE | 26.3 s (2x) | 12.6 s |
+| Median latency per CVE | 26.4 s (2x) | 12.6 s |
 
 Retries make prompt-only usable, but every retry is a full extra call, so it costs more and takes
 longer. Full breakdown in [COMPARISON.md](COMPARISON.md).
