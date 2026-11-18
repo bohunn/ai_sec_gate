@@ -68,11 +68,12 @@ result.
 
 - Add OSV as a second source for fixed and introduced version ranges, to verify fixed versions
   the NVD record does not mention.
-- Adjudicate the prose pre-screen of the first run on the new schema
-  (`data/prose_audit/candidates-20261118-schema.md`): does declared memory in
-  `background_knowledge` take the memory claims out of the prose? Then a second run on the schema,
-  to see whether the jump in severity adjustments (14 of 26 against 9 to 10 before) is a level.
-  Three runs agree that the native arm fills prose from memory more often than prompt-only
+- A second run on the new schema, native arm, to put a floor under its metrics: the jump in
+  severity adjustments (14 of 26 against 9 to 10 before), the share of outputs that declare
+  `background_knowledge` (19 of 26), and the undeclared memory or deployment claims in prose
+  (4 outputs). The first run showed that the outlet gets used but the prose repeats what it
+  declares (VALIDATION.md, "Run 20261118-113709"); the wording fix waits for the second run.
+- Three runs agree that the native arm fills prose from memory more often than prompt-only
   (VALIDATION.md, "Prose audit"); batches run the native arm alone unless the change under test is
   about the arms.
 - Repeat the prose audit on the next batch: the adjudicated first two runs show memory claims in

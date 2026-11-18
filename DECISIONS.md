@@ -504,3 +504,38 @@ The replay of the three recorded runs under the new validator is unchanged on ev
 - Rule carried forward: a schema change that adds a structured choice is checked on its first run
   for the rate at which the non-default options are chosen, against the rate the free-text field
   implied before. Structure changes behaviour, not only measurement.
+
+### The prose audit of that run (same day)
+
+- Outputs with a memory claim in prose: 6 of 26 against 7 in the previous native run; with a
+  deployment assumption: 7 against 6. Inside the floor both ways. The outlet did not empty the
+  prose.
+- What it did: 16 of the 21 memory or deployment lines in prose repeat a sentence the output
+  declared in `background_knowledge`. 5 lines in 4 outputs are undeclared, one of them next to an
+  empty outlet (`CVE-2008-1112`, "rejected by MITRE", where the record itself says Rejected and the
+  attribution to MITRE is the memory).
+- Decision: the gate's prose violation is redefined as an *undeclared* A or E. The provenance
+  categories do not change; the adjudicator marks each A or E line declared or undeclared, the
+  table reports both, and the per-run headline is the undeclared count (4 outputs here, against
+  10 outputs with any A or E before there was anything to declare). Declared duplicates are
+  handled by wording, not by a rule: the next field-description change says "declared knowledge is
+  not repeated in prose", at the next schema boundary, together with whatever the second run on
+  this schema says about the adjustment rate.
+- Second run on this schema before any wording change: it gives the floor for the new schema's
+  metrics (adjustment rate, declared count, undeclared count) and decides whether 14 adjusted
+  outputs is a level. Native arm only.
+
+### Replication on the schema (20261118-135633, same day)
+
+- 13 adjusted outputs against 14: the adjustment rate under the structured basis is a level (half
+  the corpus) and the floor for it is 1. Verdicts identical for the fifth run; N8 holds. The rate
+  stays as it is until the golden set says the adjustments are wrong; the wording "NONE is the
+  expected value" is not applied on a behaviour change that has not been shown to be an error.
+- Grounding is byte-for-byte the same list of hard and soft lines as the first run on the schema,
+  so the new validator's view of this corpus is stable.
+- The basis label swaps between two true labels across runs (`CVE-2008-1115`), and a deployment
+  reason can wear a REACHABILITY label (`CVE-2024-12366`). N12 is a consistency check between two
+  self-reported fields; the audit reads the declared sentences. Carried forward unchanged.
+- The replication pair S / R is the noise floor for every metric the new schema introduced
+  (VALIDATION.md, "Run 20261118-135633"). The adjudication of R gives the floor for the undeclared
+  count; the wording change for declared duplicates goes in after it, at the next schema boundary.

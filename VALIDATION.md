@@ -278,7 +278,10 @@ from the baseline pair's native arm.
 | priority P0 / P1 / P2 / P3 | 4 / 5 / 7 / 10 | 4 / 6 / 4 / 12 | 3 | at the floor |
 | confidence HIGH / MEDIUM / LOW | 8 / 15 / 3 | 8 / 17 / 1 | 0 | expected from decision 6 |
 | outputs declaring `background_knowledge` | not in schema | 19/26, 23 items | | |
-| outputs with ≥1 prose pre-screen candidate / lines | 14 / 33 | 12 / 27 | 4 | pending adjudication |
+| outputs with ≥1 prose pre-screen candidate / lines | 14 / 33 | 12 / 27 | 4 | noise |
+| outputs with ≥1 A (memory), adjudicated | 7 | 6 | 1 | noise |
+| outputs with ≥1 E (deployment assumption), adjudicated | 6 | 7 | 1 | noise |
+| outputs with ≥1 **undeclared** A or E | n/a (no outlet) | 4 | | new metric, see below |
 
 **The outlet is used.** 19 of 26 outputs declare something, 23 sentences in all. They are of two
 kinds, as the prose audit predicted: memory (A), such as "Sun Solaris 8 is a legacy operating system
@@ -312,10 +315,66 @@ schema is needed before 14 is called the new level rather than a first-run jump.
 vector (`privileges_required` HIGH against NONE, as in every run; `impact.confidentiality` LOW
 against HIGH, new). The `CVE-2008-1113` v2 misread did not recur. The KEV field holds.
 
-**Prose audit.** `data/prose_audit/candidates-20261118-schema.md`, 12 sections, 27 lines, each
-section headed by a "declared background_knowledge" line when the output declared any, so the
-adjudicator can tell a leak next to an empty outlet from one that duplicates a declared item.
-Adjudication pending.
+**Prose audit, adjudicated 2026-11-18.** `data/prose_audit/candidates-20261118-schema.md`, 27
+pre-screen lines plus 7 added, each A or E line annotated "declared" (the same claim is in the
+output's `background_knowledge`) or "undeclared". Outputs with ≥1 A: 6 of 26 (A1 native 7; baseline
+9, 8). Outputs with ≥1 E: 7 (A1 6; baseline 4, 5). Both inside the floor. **The outlet did not take
+memory out of the prose; it duplicated it.** 16 of the 21 A and E lines repeat a sentence the same
+output declared; 5 do not. Per output: 10 carry an A or E claim, 6 of them only declared ones, 4 at
+least one undeclared (`CVE-2008-1112` "rejected by MITRE" next to an empty outlet, twice;
+`CVE-2008-1115` "rarely"; `CVE-2007-6252` "unlikely to appear in modern builds"; `CVE-2024-28224`
+"without validating the request origin/host"). The field description says "here and nowhere else";
+the model read "here" and ignored "nowhere else" in three cases out of four.
+
+What this changes in the metric. The provenance test stays as it is: a claim from outside the record
+in a prose field is still A or E, declared or not, because the reviewer who reads only the prose
+still cannot tell. But the gate's violation is now the narrower one: an **undeclared** A or E, a
+claim the model used and did not own up to. Declared duplicates are a style problem, fixable in the
+field descriptions ("do not repeat declared knowledge in prose"); undeclared ones are the leak the
+whole audit exists for, and there are 4 outputs with one against 10 before the outlet existed. The
+table reports both from here on; the headline for a run is the undeclared count.
+
+## Run 20261118-135633: the schema's replication pair (R)
+
+Nothing moved in the key: same schema `b6fac04f10752357`, input, prompt, corpus and model as run
+`20261118-113709` (S). Native arm, 26 calls, $1.53, median 14.4 s. The pair S / R is to the new
+schema what 0919 / 0928 is to the old one: the only measurement of run-to-run variance for the
+metrics the old pair could not have.
+
+| Metric (native) | S | R | spread |
+|---|---|---|---|
+| schema-valid on first attempt | 26/26 | 26/26 | 0 |
+| outputs with ≥1 hard grounding failure / lines | 1 / 2 | 1 / 2 (same two lines on `CVE-2026-84282`) | 0 |
+| soft-failure lines | 10 | 10 (same lines) | 0 |
+| N11 / N12 / N8 | 26 / 3 / 26 pass | 26 / 2 / 26 pass | |
+| verdict BLOCK / WARN / ALLOW | 5 / 19 / 2 | 5 / 19 / 2 | 0 (fifth identical run) |
+| outputs with adjusted ≠ NVD severity | 14 | 13 | 1 |
+| priority P0 / P1 / P2 / P3 | 4 / 6 / 4 / 12 | 4 / 6 / 3 / 13 | 1 |
+| confidence HIGH / MEDIUM / LOW | 8 / 17 / 1 | 7 / 19 / 0 | 2 |
+| outputs declaring `background_knowledge` / items | 19 / 22 | 19 / 20 | 0 / 2 |
+| outputs with ≥1 prose pre-screen candidate / lines | 12 / 27 | 14 / 28 | 2 / 1 |
+
+Three readings:
+
+- **14 adjusted outputs is a level, not a jump.** 13 on the replication against 9, 10, 10 on the old
+  schema. The structured basis made the model adjust severity in half the corpus instead of a
+  third. No verdict moved and N8 holds in both runs, so the gate's decision is unaffected; whether
+  the extra adjustments are right is a golden-set question (decision 8), not a grounding one.
+- **The basis label is the model's, and two valid labels swap freely.** `CVE-2008-1115` is MEDIUM →
+  LOW in both runs with the same declared sentence about Solaris 8; S calls it PRODUCT_LIFECYCLE, R
+  calls it REACHABILITY (the flaw is local). Both are true. `CVE-2024-12366` is CRITICAL in S and
+  HIGH in R on a REACHABILITY label whose reason is deployment context ("only reachable when the
+  library is wired into a public chat surface"). N12 cannot see that, because the label it keys on
+  is self-reported. The reviewer can, because the reason and the declared knowledge are next to it.
+- **The reference case moved the other way.** `CVE-2026-86509` declared the same memory in both runs
+  ("consumer Wi-Fi router", LAN-side DHCP); S downgraded CRITICAL → HIGH on it, R kept CRITICAL with
+  basis NONE and a reason that says why the rating is fair. Same knowledge, declared both times,
+  moved severity once in two. That is the behaviour the outlet was built to make visible, and it is
+  visible.
+
+**Prose audit.** `data/prose_audit/candidates-20261118-schema2.md`, 14 sections, 28 lines, "declared"
+line under each header where the output declared anything. Adjudication pending; its headline is
+the undeclared count, against 4 outputs in S.
 
 ## Prose audit: provenance, not truth
 
