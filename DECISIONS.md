@@ -539,3 +539,50 @@ The replay of the three recorded runs under the new validator is unchanged on ev
 - The replication pair S / R is the noise floor for every metric the new schema introduced
   (VALIDATION.md, "Run 20261118-135633"). The adjudication of R gives the floor for the undeclared
   count; the wording change for declared duplicates goes in after it, at the next schema boundary.
+
+### The pair's prose audit (same day)
+
+- Undeclared memory or deployment claims in prose: 4 outputs in each run, floor 0, different CVEs
+  each time. Memory in prose: 6 and 6. Three quarters of the leaked lines repeat a declared
+  sentence (16 of 21, 14 of 19).
+- The wording change for declared duplicates ("declared knowledge is not repeated in prose") is
+  justified by the pair and **deferred**: it moves the schema hash, and a moved hash costs two runs
+  for a new floor. It is bundled with the next change that has to move the schema anyway (the
+  attack fixtures of the trust-boundary work may need one; the priority rubric of decision 8 will).
+  Until then the undeclared count is the headline and the declared duplicates are a known,
+  measured style defect.
+- The native-arm record after six runs: verdicts identical in every run on every CVE, hard
+  grounding failures confined to two misread vectors, memory in prose a quarter of outputs under
+  both schemas, undeclared memory 4 of 26 once there is a place to declare.
+
+## 2026-11-18 - Decision 8 has its data; it is not adopted here
+
+### What was measured
+
+`scripts/priority-rubric.py` runs a priority rubric over every trustworthy recorded output (207
+from six runs) and reports agreement with the model's own `priority`. VALIDATION.md, decision 8,
+has the numbers: the written candidate 76%, a revised form that closes the candidate's CRITICAL gap
+86%, description keywords deciding 5 outputs on one CVE, and 24 outputs where the model is one
+step more urgent than either form.
+
+### What it settles and what it leaves
+
+- The rubric is a function of three things the pipeline already holds (`adjusted_severity`,
+  `verdict`, exploit evidence in the input). Whatever form is adopted, `priority` is derivable, and
+  the question "should the model generate it" has the same shape as for `mechanism`, with the
+  opposite answer: `mechanism` was kept because it is deterministic only a third of the time,
+  `priority` would be deterministic always.
+- Adoption is the adjudicator's, after the regression layer of the golden set is labelled: the 24
+  "model more urgent" outputs are either the rubric's blind spot or the model's inflation, and the
+  labels decide, not the agreement rate. Contamination is on record: candidate written after
+  seeing CVE-2026-86509, revised form after seeing all 207; the blind layer of the golden set is
+  the only test of either that is not circular.
+- If `priority` is computed rather than generated, that is a schema change, bundled with the
+  wording change already waiting (declared knowledge not repeated in prose), one hash move.
+
+### A note on the bundled schema step
+
+A3a and A3b of the stage plan were made as one step. The input effect was isolated first (A1), and
+the pair S / R gives the new schema its floor, so nothing is lost for grounding or for the outlet;
+what is lost is a clean reading of the `confidence` description change on its own. Recorded in
+VALIDATION.md, "Run plan".

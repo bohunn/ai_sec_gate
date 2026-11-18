@@ -353,6 +353,10 @@ metrics the old pair could not have.
 | confidence HIGH / MEDIUM / LOW | 8 / 17 / 1 | 7 / 19 / 0 | 2 |
 | outputs declaring `background_knowledge` / items | 19 / 22 | 19 / 20 | 0 / 2 |
 | outputs with ≥1 prose pre-screen candidate / lines | 12 / 27 | 14 / 28 | 2 / 1 |
+| outputs with ≥1 A (memory), adjudicated | 6 | 6 | 0 |
+| outputs with ≥1 E (deployment assumption), adjudicated | 7 | 5 | 2 |
+| outputs with ≥1 **undeclared** A or E | 4 | 4 | 0 |
+| A or E lines that repeat a declared sentence | 16 of 21 | 14 of 19 | |
 
 Three readings:
 
@@ -372,9 +376,16 @@ Three readings:
   moved severity once in two. That is the behaviour the outlet was built to make visible, and it is
   visible.
 
-**Prose audit.** `data/prose_audit/candidates-20261118-schema2.md`, 14 sections, 28 lines, "declared"
-line under each header where the output declared anything. Adjudication pending; its headline is
-the undeclared count, against 4 outputs in S.
+**Prose audit, adjudicated 2026-11-18.** `data/prose_audit/candidates-20261118-schema2.md`, 28
+pre-screen lines plus 9 added. Outputs with ≥1 A: 6 (S 6); with ≥1 E: 5 (S 7); with ≥1 undeclared A
+or E: 4 (S 4). The undeclared four: `CVE-2008-1113` ("RADIUS/authentication"), `CVE-2008-1146` (a
+deployment claim and a claim about current OpenBSD releases), `CVE-2026-24061` (how the parameter
+reaches `login`), `CVE-2026-79379` ("usually"). None overlaps with S's undeclared four, so the
+undeclared leak is spread across the corpus, not pinned to a few records. 14 of the 19 A and E
+lines repeat a declared sentence. The pair settles the new schema's prose metrics: memory in prose
+sits at 6 of 26 native outputs with a floor of 0, undeclared memory or deployment claims at 4 with
+a floor of 0, and about three quarters of what leaks into prose is a repetition of something the
+output already declared.
 
 ## Prose audit: provenance, not truth
 
@@ -523,12 +534,35 @@ or MEDIUM; P3 otherwise. On 86509 the description says the exploit is published,
 returns P1. The golden set cannot be built until a rubric is adopted, because the oracle for
 `priority` would otherwise be whoever labels it that day.
 
+*Data (2026-11-18, `scripts/priority-rubric.py`, 207 trustworthy outputs from six runs).* The
+candidate as written agrees with the model's own priority on 158 of 207 (76%). Its largest
+disagreement is a gap in its text: adjusted CRITICAL without exploit evidence falls through to P3,
+which the model never does (`CVE-2024-12366` P1 in 8 of 8, `CVE-2026-79577` P0 or P1 in 8 of 8). Its
+second is "BLOCK ⇒ P0": the model holds `CVE-2024-28088` (BLOCK, HIGH, proof-of-concept tag) at P1 in 8
+of 8. A revised form that closes both (P0: KEV, or BLOCK with CRITICAL; P1: CRITICAL, or HIGH with
+evidence or BLOCK; P2: HIGH without evidence, or MEDIUM; P3: LOW, NONE, UNKNOWN) agrees on 177 of
+207 (86%). What remains is the model being one step more urgent than the rubric on 24 outputs (P1
+for HIGH without evidence on `CVE-2024-28224`, P2 for an adjusted LOW on `CVE-2007-6252`,
+`CVE-2008-1113`, `CVE-2008-1115`, `CVE-2008-1146`) and one step less on 4. Description keywords as
+evidence decide 5 outputs, all on `CVE-2026-86509`: with them the revised rubric returns P1 there
+(the model's answer 7 times in 8), without them P2. The rubric is a pure function of
+`adjusted_severity`, `verdict` and three facts in the input, so under either form `priority` passes
+the `mechanism` test in the other direction: it is fully determined by fields the pipeline already
+has. The two questions for adoption: whether the 24 "model more urgent" outputs are the rubric's
+error or the model's, which only labels can say; and whether a fully determined field should be
+generated at all, or computed and the model's value kept as a comparison. Both are the adjudicator's
+call, with the contamination noted: the candidate was written after seeing 86509, and the revised
+form after seeing all 207.
+
 **Run plan.** The next run must not change three things at once. Three axes were pending: the new
 input fields (KEV, v2 user interaction), the `confidence` description change, and the memory outlet
 of decision 7. The intermediate run on the **same model as the baseline** (`claude-opus-5`) with
 the *old* schema and the *new* input (`20261117-233510`) isolated the KEV effect. The two schema
 changes were then made as one step (schema `b6fac04f10752357`, 2026-11-18), so the next run moves one
-key element again: the schema. It runs the native arm by default (DECISIONS.md, 2026-11-18); the
+key element again: the schema. The price of bundling: the `confidence` distribution shift (native LOW
+3 → 1 → 0) is confounded with the outlet, and A3a's own question (does the rejected rule's violation
+rate change when its sentence goes) has no clean answer; it is read as "LOW nearly vanished once the
+sentence did", not measured apart from the outlet. It runs the native arm by default (DECISIONS.md, 2026-11-18); the
 prompt arm is added only to test whether the outlet changes the memory gap by arm.
 
 ## Running it
