@@ -37,7 +37,9 @@ longer. Full breakdown in [COMPARISON.md](COMPARISON.md).
 4. **Validation** - the response is checked against the schema, then grounded against the input
    it was generated from: copied fields (`nvd_base_score`, `cwe_ids`, `key_references`), fields
    derived from the CVSS vector, `fixed_version` against the version numbers the input actually
-   contains, `exploit_maturity` against the KEV listing, plus ten cross-field invariants. Each
+   contains, `exploit_maturity` against the KEV listing, plus twelve cross-field invariants,
+   two of which tie a severity adjustment to its declared basis and, when that basis is knowledge
+   from outside the record, to the `background_knowledge` list the model must declare it in. Each
    check reports pass, fail or unverifiable; see [VALIDATION.md](VALIDATION.md).
 5. **Retry with feedback** - if schema validation fails, the violations go back to the model as a
    follow-up turn. When retries run out, the result is marked as a broken gate rather than passed.
@@ -66,11 +68,13 @@ result.
 
 - Add OSV as a second source for fixed and introduced version ranges, to verify fixed versions
   the NVD record does not mention.
-- The schema changes as one step at the next batch boundary (decision 7: a declared outlet for
-  memory and a structured basis for severity adjustment), measured against the three recorded runs.
-  Three runs now agree that the native arm fills prose from memory more often than prompt-only
-  (VALIDATION.md, "Prose audit"); later batches run the native arm alone unless the change under
-  test is about the arms.
+- Adjudicate the prose pre-screen of the first run on the new schema
+  (`data/prose_audit/candidates-20261118-schema.md`): does declared memory in
+  `background_knowledge` take the memory claims out of the prose? Then a second run on the schema,
+  to see whether the jump in severity adjustments (14 of 26 against 9 to 10 before) is a level.
+  Three runs agree that the native arm fills prose from memory more often than prompt-only
+  (VALIDATION.md, "Prose audit"); batches run the native arm alone unless the change under test is
+  about the arms.
 - Repeat the prose audit on the next batch: the adjudicated first two runs show memory claims in
   about a third of native-arm outputs against a fifth or less in the prompt arm (VALIDATION.md,
   "Prose audit"), and a third run decides whether that is a property of constrained decoding.

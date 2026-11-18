@@ -41,6 +41,7 @@ public class TriageService {
     MessageResponse.Usage usage = null;
     String model = null;
     List<Violation> firstFailure = List.of();
+    TriageResult.FirstAttempt first = null;
 
     while (true) {
       attempt++;
@@ -50,11 +51,13 @@ public class TriageService {
         response = sender.send(List.copyOf(conversation), system, budget);
       } catch (ApiException e) {
         return TriageResult.failed(
-            input.cveId(), TriageResult.Outcome.API_ERROR, e.getMessage(), List.of(), attempt, usage, model);
+            input.cveId(), TriageResult.Outcome.API_ERROR, e.getMessage(), List.of(), attempt,
+            usage, model, first == null ? TriageResult.FirstAttempt.API_ERROR : first);
       } catch (RuntimeException e) {
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.API_ERROR,
-            e.getClass().getSimpleName() + ": " + e.getMessage(), List.of(), attempt, usage, model);
+            e.getClass().getSimpleName() + ": " + e.getMessage(), List.of(), attempt, usage,
+            model, first == null ? TriageResult.FirstAttempt.API_ERROR : first);
       }
 
       usage = add(usage, response.usage());
@@ -63,10 +66,14 @@ public class TriageService {
       if ("refusal".equals(response.stopReason())) {
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.REFUSED,
-            "the model declined to answer", List.of(), attempt, usage, model);
+            "the model declined to answer", List.of(), attempt, usage, model,
+            first == null ? TriageResult.FirstAttempt.REFUSED : first);
       }
 
       if ("max_tokens".equals(response.stopReason())) {
+        if (first == null) {
+          first = TriageResult.FirstAttempt.TRUNCATED;
+        }
         int raised = budget * 2;
         if (truncationRetriesLeft > 0 && raised <= policy.maxTokensCeiling()) {
           truncationRetriesLeft--;
@@ -75,7 +82,7 @@ public class TriageService {
         }
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.TRUNCATED,
-            "response hit the max_tokens ceiling", List.of(), attempt, usage, model);
+            "response hit the max_tokens ceiling", List.of(), attempt, usage, model, first);
       }
 
       String document;
@@ -84,7 +91,7 @@ public class TriageService {
       } catch (IllegalStateException e) {
         return TriageResult.failed(
             input.cveId(), TriageResult.Outcome.API_ERROR, e.getMessage(), List.of(), attempt,
-            usage, model);
+            usage, model, first == null ? TriageResult.FirstAttempt.API_ERROR : first);
       }
 
       List<Violation> violations;
@@ -96,13 +103,18 @@ public class TriageService {
         violations = List.of(new Violation("", "the response was not valid JSON"));
       }
 
+      if (first == null) {
+        first = violations.isEmpty()
+            ? TriageResult.FirstAttempt.VALID : TriageResult.FirstAttempt.SCHEMA_INVALID;
+      }
+
       if (violations.isEmpty()) {
         CveTriage triage = Json.API.treeToValue(parsed, CveTriage.class);
         // Grounding findings are recorded, not fed back: the schema loop repairs shape, and
         // whether a grounding failure should cost another attempt is a separate decision
         // (VALIDATION.md, decision 2).
         GroundingReport grounding = GroundingValidator.validate(input, triage);
-        return TriageResult.valid(triage, firstFailure, attempt, usage, grounding, model);
+        return TriageResult.valid(triage, firstFailure, attempt, usage, grounding, model, first);
       }
       if (firstFailure.isEmpty()) {
         firstFailure = violations;
@@ -113,7 +125,7 @@ public class TriageService {
             input.cveId(), TriageResult.Outcome.VALIDATION_EXHAUSTED,
             violations.size() + " unresolved schema violation(s) after " + attempt
                 + " attempt(s)",
-            violations, attempt, usage, model);
+            violations, attempt, usage, model, first);
       }
       feedbackRetriesLeft--;
 

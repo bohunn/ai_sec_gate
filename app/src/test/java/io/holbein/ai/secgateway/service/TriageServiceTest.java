@@ -68,6 +68,7 @@ class TriageServiceTest {
     TriageResult result = run((m, s, t) -> respond("end_turn", validDocument()));
 
     assertEquals(TriageResult.Outcome.OK, result.outcome());
+    assertEquals(TriageResult.FirstAttempt.VALID, result.firstAttempt());
     assertTrue(result.outcome().trustworthy());
     assertEquals(List.of(), result.violations());
     assertEquals("CVE-2019-1010218", result.triage().cveId());
@@ -85,7 +86,8 @@ class TriageServiceTest {
         "grounding must run on schema-valid output");
     assertEquals(
         GroundingReport.EMPTY,
-        TriageResult.failed("CVE-0-0", TriageResult.Outcome.REFUSED, "x", List.of(), 1, null, null)
+        TriageResult.failed("CVE-0-0", TriageResult.Outcome.REFUSED, "x", List.of(), 1, null, null,
+                TriageResult.FirstAttempt.REFUSED)
             .grounding(),
         "a failed result has nothing to ground");
   }
@@ -118,6 +120,7 @@ class TriageServiceTest {
     TriageResult result = run(sender);
 
     assertEquals(TriageResult.Outcome.RECOVERED_AFTER_RETRY, result.outcome());
+    assertEquals(TriageResult.FirstAttempt.SCHEMA_INVALID, result.firstAttempt());
     assertTrue(result.outcome().trustworthy());
     assertEquals(2, result.attempts());
     assertFalse(
@@ -181,6 +184,8 @@ class TriageServiceTest {
     TriageResult result = run(sender);
 
     assertEquals(TriageResult.Outcome.RECOVERED_AFTER_RETRY, result.outcome());
+    assertEquals(TriageResult.FirstAttempt.TRUNCATED, result.firstAttempt(),
+        "a truncation repaired by retry must not be read as a schema failure");
     assertEquals(List.of(4096, 8192), sender.budgets, "budget must double, not repeat");
     assertEquals(1, sender.conversations.get(1).size(), "a truncation gets more room, not advice");
   }

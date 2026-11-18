@@ -50,6 +50,7 @@ class GroundingValidatorTest {
             "< 0.1.12", "0.1.12"),
         new CveTriage.Weakness(CveTriage.Mechanism.PATH_TRAVERSAL, List.of("CWE-22")),
         new CveTriage.Severity(8.1, CveTriage.SeverityLevel.HIGH, CveTriage.SeverityLevel.HIGH,
+            CveTriage.AdjustmentBasis.NONE,
             "NVD's HIGH is a fair reflection of a low-privilege network RCE."),
         new CveTriage.Exploitability(CveTriage.AttackVector.NETWORK,
             CveTriage.PrivilegesRequired.LOW, false, CveTriage.ExploitMaturity.PROOF_OF_CONCEPT,
@@ -60,7 +61,7 @@ class GroundingValidatorTest {
             "Upgrade langchain to 0.1.12 or later.", null, CveTriage.Effort.TRIVIAL),
         CveTriage.Verdict.BLOCK, CveTriage.Priority.P1, CveTriage.Confidence.MEDIUM,
         "Network reachable, PoC published, trivial fix available.",
-        List.of(), List.of(PR_URL));
+        List.of(), List.of(), List.of(PR_URL));
   }
 
   private static CveTriage with(Consumer<ObjectNode> edit) {
@@ -433,5 +434,60 @@ class GroundingValidatorTest {
     assertFinding(r, "invariant.N8", Status.FAIL, Severity.SOFT);
     assertFinding(r, "invariant.N9", Status.FAIL, Severity.SOFT);
     assertFinding(r, "invariant.N10", Status.PASS, null);
+  }
+
+  @Test
+  void theAdjustmentBasisMustAgreeWithWhetherSeverityWasAdjusted() {
+    GroundingReport adjustedWithoutBasis = GroundingValidator.validate(INPUT, with(d ->
+        at(d, "severity").put("adjusted_severity", "MEDIUM")
+            .put("adjustment_reason", "Low privileges still needed and the PoC is unweaponised.")));
+    assertFinding(adjustedWithoutBasis, "invariant.N11", Status.FAIL, Severity.HARD);
+
+    GroundingReport basisWithoutAdjustment = GroundingValidator.validate(INPUT, with(d ->
+        at(d, "severity").put("adjustment_basis", "REACHABILITY")));
+    assertFinding(basisWithoutAdjustment, "invariant.N11", Status.FAIL, Severity.HARD);
+
+    GroundingReport consistent = GroundingValidator.validate(INPUT, with(d ->
+        at(d, "severity").put("adjusted_severity", "MEDIUM")
+            .put("adjustment_basis", "REACHABILITY")
+            .put("adjustment_reason", "Low privileges still needed and the PoC is unweaponised.")));
+    assertFinding(consistent, "invariant.N11", Status.PASS, Severity.HARD);
+  }
+
+  @Test
+  void aBasisFromOutsideTheRecordMustBeDeclaredInBackgroundKnowledge() {
+    Consumer<ObjectNode> lifecycle = d -> at(d, "severity")
+        .put("adjusted_severity", "MEDIUM")
+        .put("adjustment_basis", "PRODUCT_LIFECYCLE")
+        .put("adjustment_reason", "The affected release line is no longer maintained upstream.");
+
+    GroundingReport undeclared = GroundingValidator.validate(INPUT, with(lifecycle));
+    assertFinding(undeclared, "invariant.N12", Status.FAIL, Severity.HARD);
+
+    GroundingReport declared = GroundingValidator.validate(INPUT, with(d -> {
+      lifecycle.accept(d);
+      d.putArray("background_knowledge").add("LangChain 0.1.x is no longer maintained.");
+    }));
+    assertFinding(declared, "invariant.N12", Status.PASS, Severity.HARD);
+
+    GroundingReport fromTheRecord = GroundingValidator.validate(INPUT, with(d ->
+        at(d, "severity").put("adjusted_severity", "MEDIUM")
+            .put("adjustment_basis", "REACHABILITY")
+            .put("adjustment_reason", "Low privileges still needed and the PoC is unweaponised.")));
+    assertTrue(absent(fromTheRecord, "invariant.N12"), "N12 only applies to outside knowledge");
+  }
+
+  @Test
+  void outputsRecordedBeforeTheBasisExistedReplayAsUnverifiable() {
+    GroundingReport r = GroundingValidator.validate(INPUT, with(d -> {
+      at(d, "severity").remove("adjustment_basis");
+      d.remove("background_knowledge");
+    }));
+    assertFinding(r, "invariant.N11", Status.UNVERIFIABLE, Severity.HARD);
+    assertTrue(absent(r, "invariant.N12"), "N12 cannot be judged without a basis");
+  }
+
+  private static boolean absent(GroundingReport report, String path) {
+    return report.findings().stream().noneMatch(f -> f.path().equals(path));
   }
 }

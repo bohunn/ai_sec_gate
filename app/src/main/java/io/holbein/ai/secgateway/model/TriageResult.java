@@ -12,7 +12,17 @@ public record TriageResult(
     int attempts,
     MessageResponse.Usage usage,
     GroundingReport grounding,
-    String model) {
+    String model,
+    FirstAttempt firstAttempt) {
+  /** What the first call produced, kept apart from the final outcome so a retry's cause is known. */
+  public enum FirstAttempt {
+    VALID,
+    SCHEMA_INVALID,
+    TRUNCATED,
+    REFUSED,
+    API_ERROR
+  }
+
   public enum Outcome {
     OK,
 
@@ -37,9 +47,11 @@ public record TriageResult(
       int attempts,
       MessageResponse.Usage usage,
       GroundingReport grounding,
-      String model) {
+      String model,
+      FirstAttempt firstAttempt) {
     Outcome outcome = attempts == 1 ? Outcome.OK : Outcome.RECOVERED_AFTER_RETRY;
-    return new TriageResult(triage, outcome, repaired, attempts, usage, grounding, model);
+    return new TriageResult(
+        triage, outcome, repaired, attempts, usage, grounding, model, firstAttempt);
   }
 
   /** Results read from older raw files carry no grounding section. */
@@ -54,9 +66,10 @@ public record TriageResult(
       List<Violation> violations,
       int attempts,
       MessageResponse.Usage usage,
-      String model) {
+      String model,
+      FirstAttempt firstAttempt) {
     return new TriageResult(
         CveTriage.needsHumanReview(cveId, reason), outcome, violations, attempts, usage,
-        GroundingReport.EMPTY, model);
+        GroundingReport.EMPTY, model, firstAttempt);
   }
 }

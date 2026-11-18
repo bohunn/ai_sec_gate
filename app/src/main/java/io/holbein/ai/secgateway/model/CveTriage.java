@@ -23,8 +23,8 @@ public record CveTriage(
     Verdict verdict,
     @Field("Remediation priority. P0 is same-day, P1 this sprint, P2 next quarter, P3 backlog.")
     Priority priority,
-    @Field("Your confidence in the verdict given only the supplied input. Use LOW when data_gaps"
-        + " is non-empty.")
+    @Field("Your confidence in the verdict given only the supplied input. Use LOW when a gap"
+        + " listed in data_gaps bears on the verdict itself, not merely on a detail.")
     Confidence confidence,
     @Field("Two or three sentences tying severity, exploitability and remediation effort to the"
         + " verdict. This is what a reviewer reads when they disagree with the gate.")
@@ -32,6 +32,13 @@ public record CveTriage(
     @Field("Facts you needed but the input did not provide, as short noun phrases (e.g. 'no CVSS"
         + " v3 metrics', 'no fixed version published'). Empty array when the input was sufficient.")
     List<String> dataGaps,
+    @Field("Facts this triage relies on that come from your own knowledge rather than from the"
+        + " record: vendor support or end-of-life status, what a product name refers to, how a"
+        + " component is usually deployed, a well-known alias. One short declarative sentence"
+        + " each. Empty array when every claim in this document comes from the record. Anything"
+        + " from memory goes here and nowhere else: a fact from memory inside a prose field is a"
+        + " violation.")
+    List<String> backgroundKnowledge,
     @Field("At most three of the most useful reference URLs from the input - prefer vendor"
         + " advisories and patch commits over mailing-list archives. Empty array if the input"
         + " lists none.")
@@ -42,7 +49,8 @@ public record CveTriage(
         "Automated triage did not complete: " + reason,
         new Affected(null, null, ComponentType.UNKNOWN, "unknown", null),
         new Weakness(Mechanism.UNKNOWN, List.of()),
-        new Severity(null, SeverityLevel.UNKNOWN, SeverityLevel.UNKNOWN, "Not assessed."),
+        new Severity(null, SeverityLevel.UNKNOWN, SeverityLevel.UNKNOWN, AdjustmentBasis.NONE,
+            "Not assessed."),
         new Exploitability(
             AttackVector.UNKNOWN, PrivilegesRequired.UNKNOWN, null,
             ExploitMaturity.UNKNOWN, Likelihood.LOW),
@@ -53,6 +61,7 @@ public record CveTriage(
         Confidence.LOW,
         "The gate could not produce a trustworthy verdict: " + reason,
         List.of(reason),
+        List.of(),
         List.of());
   }
 
@@ -98,6 +107,16 @@ public record CveTriage(
       @Field("Your severity after weighing real-world exploitability and reachability. May differ"
           + " from nvd_severity in either direction.")
       SeverityLevel adjustedSeverity,
+      @Field("Why adjusted_severity differs from nvd_severity. NONE when they are equal."
+          + " EXPLOIT_EVIDENCE: exploit tags, a KEV listing or exploit maturity in the input."
+          + " REACHABILITY: attack vector, privileges or user interaction in the input."
+          + " FIX_AVAILABILITY: whether the input states a fix. RECORD_QUALITY: the record is"
+          + " disputed, rejected or too thin to trust the NVD score. PRODUCT_LIFECYCLE: the"
+          + " product's support status, which the record does not state. DEPLOYMENT_CONTEXT: how"
+          + " the component is usually deployed, which the record does not state. The last two"
+          + " rest on knowledge from outside the record and are only allowed when"
+          + " background_knowledge declares that knowledge.")
+      AdjustmentBasis adjustmentBasis,
       @Field("One sentence justifying adjusted_severity. If it equals nvd_severity, say why the"
           + " NVD score is a fair reflection.")
       String adjustmentReason) {
@@ -202,6 +221,16 @@ public record CveTriage(
     HIGH,
     CRITICAL,
     UNKNOWN
+  }
+
+  public enum AdjustmentBasis {
+    NONE,
+    EXPLOIT_EVIDENCE,
+    REACHABILITY,
+    FIX_AVAILABILITY,
+    RECORD_QUALITY,
+    PRODUCT_LIFECYCLE,
+    DEPLOYMENT_CONTEXT
   }
 
   public enum AttackVector {

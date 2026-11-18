@@ -2,7 +2,7 @@
 set -uo pipefail
 
 RUNS="${RUNS:-1}"
-ARMS="${ARMS:-prompt native}"
+ARMS="${ARMS:-native}"
 APP="app/build/install/app/bin/app"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="data/runs/$STAMP"

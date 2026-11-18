@@ -273,7 +273,7 @@ The comparability key of a run is, in order of how often it has actually drifted
 | Element | Where it is recorded | Status |
 |---|---|---|
 | Model id the API answered with | `model` in every raw result and CSV row (from 2026-11-13) | recorded per result; the manifest's `model` is the *requested* name and is kept separately |
-| Output schema | `schema_sha256` in the manifest; pinned to `81f1521f6e417e68` by a test | recorded, deterministic by construction |
+| Output schema | `schema_sha256` in the manifest; pinned by a test (`81f1521f6e417e68` for the three recorded runs, `b6fac04f10752357` from 2026-11-18) | recorded, deterministic by construction |
 | System prompt | `system_prompt` in the manifest, built from one constant plus `Invariants.BLOCK_RULE` | recorded |
 | Input shape (`CveInput` fields and caps) | `input_shape_sha256` in the manifest (from 2026-11-13): hash of a fully populated `CveInput` sample plus the caps; pinned to `bc30ad24d93e88a4` by a test | recorded; see the next entry for the day it was not deterministic |
 | Corpus snapshot | `data/corpus/manifest.json` `frozen_at`, copied into the run manifest as `corpus_frozen_at` (from 2026-11-13) | recorded |
@@ -448,3 +448,59 @@ shapes, one direction, a floor of one output. Details in VALIDATION.md, "Prose a
   lines of one adjudication are the candidates for the next marker list: "long out of support",
   "experimental", "modern build / build pipeline / dependency graph" came in through added lines
   twice.
+
+## 2026-11-18 - Schema `b6fac04f10752357`: a declared outlet for memory, a structured basis for severity
+
+### What changed
+
+One schema step at the batch boundary, after run `20261117-233510` had isolated the input effect:
+
+- `background_knowledge` (top level, list of strings): facts the triage relies on that come from
+  the model's own knowledge, one sentence each, empty when everything comes from the record. The
+  system prompt gained one sentence: when you rely on something the record does not state, declare
+  it here and nowhere else.
+- `severity.adjustment_basis` (enum NONE, EXPLOIT_EVIDENCE, REACHABILITY, FIX_AVAILABILITY,
+  RECORD_QUALITY, PRODUCT_LIFECYCLE, DEPLOYMENT_CONTEXT) with N11 (basis NONE exactly when adjusted
+  equals NVD severity) and N12 (PRODUCT_LIFECYCLE or DEPLOYMENT_CONTEXT only with a non-empty
+  outlet). Both HARD. Outputs recorded under the old schema replay with N11 unverifiable.
+- `confidence` description: "Use LOW when data_gaps is non-empty" replaced by a rule about gaps that
+  bear on the verdict (VALIDATION.md, decision 6, proposed 2026-11-12).
+- `results.csv` gains three trailing columns: `first_attempt_outcome` (VALID / SCHEMA_INVALID /
+  TRUNCATED / REFUSED / API_ERROR, so a truncation repaired by retry is no longer read as a schema
+  failure), `adjustment_basis`, and the count of `background_knowledge` items. Raw results carry
+  `first_attempt`. Older files read back with these absent.
+
+### Why one step
+
+Each of these changes the schema hash, and the hash is one element of the comparability key. Made
+separately they would have cost a batch each with nothing to compare in between; made together
+they move the key once, and the next run compares to `20261117-233510` on everything but the
+schema. Decision 7 and decision 6 are closed by the same commit for that reason, not because they
+are related.
+
+### What the next run measures
+
+- Does the outlet get used, and does prose A drop when it is? The adjudication for that run reads
+  the "declared" line under each section and distinguishes a leak next to an empty outlet from one
+  that duplicates a declared item.
+- Does `adjustment_basis` ever say PRODUCT_LIFECYCLE or DEPLOYMENT_CONTEXT, and is N12 clean?
+- Does the confidence distribution move toward the middle in the prompt arm, if the prompt arm runs?
+
+The replay of the three recorded runs under the new validator is unchanged on every hard failure
+(6, 5, 3), which is the check that the new invariants do not re-read old data.
+
+### First run on the schema (20261118-113709, same day)
+
+- The outlet is used in 19 of 26 outputs and takes deployment assumptions as readily as memory.
+  That was not the design, and it is kept: a declared E is better than a buried one, and the input
+  is still the right place for deployment context when it exists.
+- N11 and N12 hold on all 26. The basis is self-reported, so N12 proves consistency between two
+  fields the model wrote, not the truth of either; the audit still reads the declared sentences.
+- Severity is adjusted in 14 outputs against 9, 10 and 10 in the earlier native runs, all five new
+  adjustments on CVEs never adjusted before. A menu of reasons is read as an invitation. Verdicts
+  did not move and priority moved by its floor, so no rule changes on one run; the second run on
+  this schema decides whether 14 is a level. If it is, the fix is in the field description
+  ("NONE is the expected value; adjust only when the record gives a reason"), not in the enum.
+- Rule carried forward: a schema change that adds a structured choice is checked on its first run
+  for the rate at which the non-default options are chosen, against the rate the free-text field
+  implied before. Structure changes behaviour, not only measurement.

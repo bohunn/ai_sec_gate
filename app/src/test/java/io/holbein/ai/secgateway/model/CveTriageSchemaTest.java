@@ -48,7 +48,7 @@ class CveTriageSchemaTest {
   @Test
   void theSchemaHashIsPinned() {
     assertEquals(
-        "81f1521f6e417e68",
+        "b6fac04f10752357",
         Json.sha256(CveTriageSchema.schema()),
         "The output schema changed (or its serialization is not deterministic across JVMs). If the"
             + " change is intended: update this constant and add a dated DECISIONS.md entry; the"

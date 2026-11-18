@@ -8,6 +8,7 @@ import java.util.Set;
 
 import io.holbein.ai.secgateway.model.CveInput;
 import io.holbein.ai.secgateway.model.CveTriage;
+import io.holbein.ai.secgateway.model.CveTriage.AdjustmentBasis;
 import io.holbein.ai.secgateway.model.CveTriage.AttackVector;
 import io.holbein.ai.secgateway.model.CveTriage.Confidence;
 import io.holbein.ai.secgateway.model.CveTriage.ExploitMaturity;
@@ -126,6 +127,30 @@ public final class Invariants {
           s.adjustedSeverity() == SeverityLevel.NONE || s.adjustedSeverity() == SeverityLevel.LOW,
           "ALLOW pairs with NONE or LOW severity",
           "ALLOW with adjusted_severity " + s.adjustedSeverity()));
+    }
+
+    // N11: the basis says whether the severity was adjusted, and the two severities agree with it.
+    // Outputs recorded before the schema carried a basis replay as unverifiable, not as failed.
+    AdjustmentBasis basis = s.adjustmentBasis();
+    if (basis == null) {
+      findings.add(Finding.unverifiable("invariant.N11", "output predates adjustment_basis"));
+      return;
+    }
+    boolean adjusted = s.adjustedSeverity() != s.nvdSeverity();
+    findings.add(rule("invariant.N11", Severity.HARD, adjusted == (basis != AdjustmentBasis.NONE),
+        "adjustment_basis " + basis + " matches adjusted vs nvd severity",
+        adjusted
+            ? "adjusted_severity " + s.adjustedSeverity() + " differs from nvd_severity "
+                + s.nvdSeverity() + " but adjustment_basis is NONE"
+            : "adjustment_basis is " + basis + " but adjusted_severity equals nvd_severity"));
+
+    // N12: a basis that rests on knowledge from outside the record is declared in the outlet.
+    if (basis == AdjustmentBasis.PRODUCT_LIFECYCLE || basis == AdjustmentBasis.DEPLOYMENT_CONTEXT) {
+      List<String> declared = out.backgroundKnowledge();
+      findings.add(rule("invariant.N12", Severity.HARD, declared != null && !declared.isEmpty(),
+          "basis " + basis + " is declared in background_knowledge",
+          "adjustment_basis " + basis + " rests on knowledge outside the record but"
+              + " background_knowledge is empty"));
     }
   }
 
