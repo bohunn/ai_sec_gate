@@ -344,3 +344,107 @@ value and is a sample.
 - Rule carried forward: `RUNS >= 3` applies to the pipeline's own determinism, not only to the
   model. Anything written as provenance is checked across independent processes before it is
   trusted.
+
+## 2026-11-17 - The prose audit is adjudicated; the memory gap by arm stands
+
+### What happened
+
+The 136 pre-screen lines in `data/prose_audit/candidates-20261113.md` were categorised by hand
+into A memory / B paraphrase / C generic / D inference / E deployment assumption, 27 lines the
+pre-screen had missed were added, and `scripts/prose-audit-table.py` reads the file. Outputs with
+at least one memory claim: native 9/26 and 8/26, prompt 5/25 and 4/26. Outputs with at least one
+deployment assumption: 4, 5, 4, 3. Full table and reading in VALIDATION.md, "Prose audit".
+
+### What it decides
+
+- The hypothesis recorded in COMPARISON.md on 2026-11-13 (constrained decoding invites filling from
+  memory) moves from "under doubt" to "stands with caveats": the arm gap is 4 outputs in both runs
+  against a between-run spread of 1, and it holds on the arm-blind pre-screen lines alone. It is
+  still a two-sample floor and the adjudicator saw the arm label; the next batch is the third point.
+- Deployment assumptions are not an arm effect. They appear in about one output in six either way
+  and only in `adjustment_reason` and `rationale`, the two fields next to the verdict. That is an
+  input problem (deployment context is not in the input, see the comparability-key entry), not a
+  JSON-forcing problem.
+- Decision 7 gets its data: `adjustment_reason` has 28 A or E lines out of 39 flagged, the worst
+  ratio of any field, and it is what N8 reads through `adjusted_severity`. Whether the answer is a
+  labelled memory outlet or a structured `adjustment_basis` is still open; it is no longer open
+  whether the field needs one.
+
+### Rules carried forward
+
+- Adjudicated letters live in the candidates file next to the pre-screen line, with a note in
+  parentheses for anything disputed or added; the script counts disputed and added lines separately
+  so a result can be checked against them. Generated worksheets (`worksheet-*.md`) carry raw model
+  outputs and are not committed.
+- The arm label in the section header makes blind adjudication impossible in this layout. The next
+  adjudication either strips the header to an opaque id or keeps relying on the pre-screen-only
+  control; stripping is better and costs one mapping file.
+
+## 2026-11-18 - First run on the new input shape; what it settled and what it exposed
+
+### What happened
+
+Run `20261117-233510`: `claude-opus-5`, unchanged schema and prompt, input with `known_exploited`,
+`kev_date_added` and the v2 user-interaction flag. One key element moved. Replay and comparison
+with the baseline pair are in VALIDATION.md, "Run 20261117-233510".
+
+### What it settled
+
+- The KEV hard failures on `CVE-2026-24061` were an input gap, not a model habit: with the KEV
+  listing in the input both arms say ACTIVELY_EXPLOITED. Had only one arm changed, the fix would
+  have interacted with the JSON technique; it did not.
+- Verdicts are a stable function of the input on this corpus: three runs, two input shapes, no
+  verdict differs from the same arm's verdict in any other run. A verdict change in a later run is
+  a signal, by the noise rule and now by three points.
+- The two remaining hard failures (`CVE-2026-84282` PR, `CVE-2008-1113` AV) are the model misreading
+  a vector it was given. The validator catches them; the input cannot fix them.
+
+### What it exposed
+
+- `first_attempt_valid` in `results.csv` conflates a schema failure with a `max_tokens` truncation:
+  the native arm's single "miss" was the ceiling, repaired by the truncation retry with zero
+  violations. The column keeps its meaning for the recorded runs; the next CSV-header change (a
+  batch boundary, like the schema) adds a `first_attempt_outcome` column distinguishing
+  schema / truncation / api-error, and COMPARISON.md reads the native 25/26 with that note until
+  then.
+- The 2026-11-13 pre-screen compared prose with the raw NVD record, not with the serialized
+  `CveInput`, against the oracle rule of this document. `scripts/prose-prescreen.py` now uses
+  `app input`; on the baseline runs the counts move by at most one output (17 / 14 and 14 / 13
+  against 18 / 14 and 14 / 13), and the adjudicated letters are unaffected because they are
+  judgements on lines, not on counts.
+- Blind adjudication is now the layout, not an intention: section headers carry the run and the
+  CVE and a per-section random token for the arm, sections are shuffled, the token map lives in
+  `.arms-<date>.json`, and the table script restores the arm from the map. Per-arm pre-screen
+  counts for a run under adjudication are not written into the docs until the letters are in.
+
+## 2026-11-18 - Three points on the memory gap; the prompt arm retires from routine batches
+
+### What happened
+
+The blind adjudication of run `20261117-233510` gives native 7/26 and prompt 4/26 outputs with a
+memory claim, after 9/26 vs 5/25 and 8/26 vs 4/26 on the baseline pair. Three runs, two input
+shapes, one direction, a floor of one output. Details in VALIDATION.md, "Prose audit".
+
+### What it decides
+
+- The hypothesis of 2026-11-13 is a result: on this task native structured outputs produce prose
+  with memory claims more often than prompt-only. The mechanism is not decided (forced fields, or
+  more prose when the grammar does the formatting); the fix is the same either way and is decision
+  7's business: a declared outlet for memory and a structured basis for severity adjustment, so a
+  claim from outside the record is countable and cannot move `adjusted_severity` unannounced.
+- The prompt arm has answered the two questions it was kept for (the comparison in COMPARISON.md
+  and this gap). From the next batch on, `ARMS=native` is the default and the prompt arm runs only
+  when the change under test is about the arms, for instance whether the memory outlet reduces
+  native A more than prompt A. Halves the cost of a batch and of its adjudication.
+- E (deployment assumptions) is reported as leaning the same way, not as settled: 0, 2, 4 gaps,
+  small counts, and a pre-screen that misses half of them. It stays an input problem first: the
+  deployment context is not in the record and must not be in the prose.
+
+### Rules carried forward
+
+- Blind layout for every adjudication (token headers, shuffled sections, map opened last); the
+  first adjudication's non-blindness is noted wherever its numbers are cited.
+- A pre-screen marker list is updated only between adjudications, never during one, and the added
+  lines of one adjudication are the candidates for the next marker list: "long out of support",
+  "experimental", "modern build / build pipeline / dependency graph" came in through added lines
+  twice.

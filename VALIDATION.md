@@ -176,21 +176,85 @@ these two runs on the same metric is noise** and is reported as noise. The sprea
 two samples, not a confidence interval: below it is certainly noise; above it is not automatically
 an effect.
 
-| Metric (per arm) | native 0919 | native 0928 | spread | prompt 0919 | prompt 0928 | spread |
-|---|---|---|---|---|---|---|
-| trustworthy outputs | 26 | 26 | | 25 | 26 | |
-| outputs with ≥1 hard grounding failure | 3 | 2 | 1 | 2 | 2 | 0 |
-| hard-failure lines | 3 | 2 | 1 | 3 | 3 | 0 |
-| soft-failure lines | 15 | 14 | 1 | 9 | 19 | 10 |
-| outputs with ≥1 prose-audit candidate (pre-screen) | 18 | 14 | 4 | 14 | 13 | 1 |
-| verdict BLOCK / WARN / ALLOW / NHR | 5 / 19 / 2 / 0 | 5 / 19 / 2 / 0 | 0 | 5 / 17 / 2 / 1 | 5 / 18 / 2 / 1 | 1 |
-| priority P0 / P1 / P2 / P3 | 5 / 3 / 10 / 8 | 5 / 2 / 8 / 11 | 3 | 4 / 5 / 6 / 10 | 4 / 7 / 7 / 8 | 2 |
-| confidence HIGH / MEDIUM / LOW | 6 / 16 / 4 | 6 / 16 / 4 | 0 | 3 / 9 / 13 | 3 / 7 / 16 | 3 |
+| Metric (per arm) | native 0919 | native 0928 | spread | native A1 | prompt 0919 | prompt 0928 | spread | prompt A1 |
+|---|---|---|---|---|---|---|---|---|
+| trustworthy outputs | 26 | 26 | | 26 | 25 | 26 | | 26 |
+| outputs with ≥1 hard grounding failure | 3 | 2 | 1 | 2 | 2 | 2 | 0 | 1 |
+| hard-failure lines | 3 | 2 | 1 | 2 | 3 | 3 | 0 | 1 |
+| soft-failure lines | 15 | 14 | 1 | 12 | 9 | 19 | 10 | 6 |
+| outputs with ≥1 prose-audit candidate (pre-screen) | 18 | 14 | 4 | 14 | 14 | 13 | 1 | 12 |
+| outputs with ≥1 A (memory), adjudicated | 9 | 8 | 1 | 7 | 5 | 4 | 1 | 4 |
+| outputs with ≥1 E (deployment assumption), adjudicated | 4 | 5 | 1 | 6 | 4 | 3 | 1 | 2 |
+| verdict BLOCK / WARN / ALLOW / NHR | 5 / 19 / 2 / 0 | 5 / 19 / 2 / 0 | 0 | 5 / 19 / 2 / 0 | 5 / 17 / 2 / 1 | 5 / 18 / 2 / 1 | 1 | 5 / 18 / 2 / 1 |
+| priority P0 / P1 / P2 / P3 | 5 / 3 / 10 / 8 | 5 / 2 / 8 / 11 | 3 | 4 / 5 / 7 / 10 | 4 / 5 / 6 / 10 | 4 / 7 / 7 / 8 | 2 | 4 / 5 / 8 / 9 |
+| confidence HIGH / MEDIUM / LOW | 6 / 16 / 4 | 6 / 16 / 4 | 0 | 8 / 15 / 3 | 3 / 9 / 13 | 3 / 7 / 16 | 3 | 4 / 8 / 14 |
+
+Spread of a distribution row is half the L1 distance between the two runs (the number of outputs
+that moved). A1 is run `20261117-233510`, the first run on the new input shape; its prose-audit
+cells were filled only after the blind adjudication was in. The baseline pre-screen cells were
+produced against the raw record on 2026-11-13; the pre-screen script now uses the serialized
+`CveInput` and gives 17 / 14 and 14 / 13 for the same runs, and the A1 cells are under that oracle.
 
 Two readings follow immediately. The verdict distribution is stable to the output across runs,
 so a verdict change in a later run is a signal. The native-arm prose-candidate count moved by 4
-between identical runs, which is exactly the "native 18 vs prompt 14" gap in the first run: that
-gap never stood above the noise floor, and COMPARISON.md says so.
+between identical runs, which is exactly the "native 18 vs prompt 14" gap in the first run: the
+pre-screen gap never stood above the noise floor. The adjudicated A count behaves differently: it
+moves by 1 between runs and by 4 between arms, in both runs (see "Prose audit", adjudicated).
+
+## Run 20261117-233510: the new input shape (A1)
+
+One element of the comparability key moved: `input_shape_sha256` is `bc30ad24d93e88a4` (the input
+now carries `known_exploited`, `kev_date_added` and the v2 `user_interaction_required`). Model
+`claude-opus-5`, schema `81f1521f6e417e68`, system prompt and `corpus_frozen_at` are those of
+the baseline pair. Both arms ran, 52 calls, replayed with `app ground`.
+
+**Control question 1: does grounding change?** Per arm against the floor above:
+
+- Hard failures: native 2 outputs / 2 lines (baseline 3 and 2 / 3 and 2): noise. Prompt 1 / 1
+  (baseline 2 and 2 / 3 and 3): one fewer than either baseline, but the prompt floor on this metric
+  is 0, so the rule has nothing to say; read as a direction, not an effect.
+- The two remaining hard failures are the two misreads the baseline already had: `CVE-2026-84282`
+  `privileges_required` HIGH against a v3.1 vector saying NONE, in both arms (5 of 8 baseline
+  outputs had it; now 2 of 2); `CVE-2008-1113` `attack_vector` ADJACENT against a v2 vector saying
+  NETWORK, native only (2 of 4 baseline outputs; now 1 of 2).
+- The KEV artefact is gone in both arms. `CVE-2026-24061` had `exploit_maturity` PROOF_OF_CONCEPT
+  (native) or UNPROVEN (prompt) in both baseline runs, 4 hard lines in all; with `known_exploited:
+  true` in the input both arms say ACTIVELY_EXPLOITED and native confidence moved MEDIUM → HIGH.
+  Same change in both arms is an input effect, not an interaction with the JSON technique.
+- Soft failures: native 12 (15, 14; floor 1), prompt 6 (9, 19; floor 10). The native count is 2
+  below both baselines, above its floor of 1, in the direction of fewer failures; the lines that
+  remain are the CPE-noise vendor/product mismatches on `CVE-2008-1113` and `CVE-2008-1146` and two
+  PROOF_OF_CONCEPT claims without an Exploit tag (`CVE-2024-28224`, `CVE-2026-79577`).
+
+**Control question 2: do the judgement fields move?**
+
+- Verdicts: identical to both baselines in both arms, output by output. Three runs, two input
+  shapes, zero verdict changes.
+- Priority: native 4 / 5 / 7 / 10 against a floor of 3 moved outputs; 4 against 0919, 3 against
+  0928. The one P0 lost is `CVE-2026-79577` (sparse record, no CVSS, no CWE), P0 in both baseline
+  runs and P1 now; the prompt arm had it at P1 in all three runs. Explicit `known_exploited: false`
+  in the input is the obvious candidate cause; one output cannot confirm it. Prompt 4 / 5 / 8 / 9:
+  1.5 and 2 against a floor of 2.5, noise.
+- Confidence: native 8 / 15 / 3 against a floor of 0, 2 moved outputs. One of the two new HIGHs is
+  the KEV CVE; the other (`CVE-2024-28088` against 0919, `CVE-2026-20963` against 0928) is not shared
+  between the two comparisons. Prompt 1.5 and 2 against a floor of 2.5, noise.
+- Adjusted severity: native identical to 0928, 2 moved against 0919 (floor 2); prompt 2 and 4.5
+  against a floor of 2.5, the 4.5 being against the run that had the API error. Noise.
+
+**Schema side.** Prompt-only 8/26 valid on the first attempt (7 and 5 before), 9 malformed and 9
+extra fields; 4 of the 9 invented names had appeared in a baseline run (`" data_gaps"`,
+`severity.exploit_maturity_note`, `exploitability.exploit_maturity_note`,
+`severity.adjustment_reason_note`), 5 were new. Native 25/26: the one retry on `CVE-2026-76960` is
+not a schema failure but the `max_tokens` ceiling (4,096; the output needed 4,999 tokens over two
+attempts), repaired by the truncation retry. `first_attempt_valid` in `results.csv` does not
+distinguish the two; see DECISIONS.md, 2026-11-18. Cost $2.37 against $1.47, median latency 25.4 s
+against 14.0 s.
+
+**Prose audit.** The pre-screen for this run is `data/prose_audit/candidates-20261118.md`,
+generated by `scripts/prose-prescreen.py` against the serialized `CveInput` with the arm hidden
+behind a per-section token (`.arms-20261118.json`, opened only after the last letter was in).
+Adjudicated 2026-11-18, blind to arm this time: 53 pre-screen lines plus 14 added. Results under
+"Prose audit", adjudicated, third point.
 
 ## Prose audit: provenance, not truth
 
@@ -219,10 +283,72 @@ or outside the LLM; never in prose.
 **Metric.** Share of outputs with at least one A claim, and separately with at least one E claim,
 per run × arm and per field. The split by arm is kept on purpose. In the pre-screen the native
 arm has more flagged outputs than the prompt arm in the first run (18 of 26 vs 14 of 25); in the
-second run, same model and same input, the difference is one output (14 vs 13 of 26). The first run
-suggests a hypothesis for COMPARISON.md (constrained decoding, by forcing every field to be filled,
-may invite filling from memory); the second run does not replicate it. Adjudication decides whether
-the first-run gap survives once the noise lines are removed.
+second run, same model and same input, the difference is one output (14 vs 13 of 26). The
+pre-screen therefore could not decide the hypothesis from COMPARISON.md (constrained decoding, by
+forcing every field to be filled, may invite filling from memory). Adjudication could.
+
+**Adjudicated (2026-11-17).** All 136 pre-screen lines of `data/prose_audit/candidates-20261113.md`
+were categorised by hand, 27 lines the pre-screen missed were added (marked "added"), and
+`scripts/prose-audit-table.py` tabulates the file:
+
+| run | arm | outputs | ≥1 A | ≥1 E | A lines | E lines | lines |
+|---|---|---|---|---|---|---|---|
+| 20260919-000440 | native | 26 | 9 (35%) | 4 (15%) | 21 | 5 | 49 |
+| 20260919-000440 | prompt | 25 | 5 (20%) | 4 (16%) | 14 | 5 | 32 |
+| 20260928-093807 | native | 26 | 8 (31%) | 5 (19%) | 22 | 7 | 47 |
+| 20260928-093807 | prompt | 26 | 4 (15%) | 3 (12%) | 16 | 4 | 35 |
+
+Three readings:
+
+- **A differs by arm, in both runs, above the noise floor.** Native has 4 more outputs with a memory
+  claim than prompt in each run, while the same arm moves by 1 between runs. In each run every
+  output with an A in the prompt arm also has one in the native arm; the reverse does not hold.
+  `CVE-2002-1774` and `CVE-2024-28224` carry memory claims in the native arm only, in both runs. The
+  gap survives when the 27 adjudicator-added lines are dropped and only the mechanical, arm-blind
+  pre-screen lines count: 8 vs 4 and 6 vs 3. The hypothesis stands, with the caveats below.
+- **E leans the same way, less firmly.** 4 vs 4 and 5 vs 3: one run with no gap, one with a gap of
+  2 against a floor of 1. Deployment assumptions appear in roughly one output in six and only in
+  the two fields that feed the verdict: `adjustment_reason` (13 lines) and `rationale` (8). None in
+  `summary`, `detail`, `workaround` or `worst_case`.
+- **Where A lands.** `summary` 20, `rationale` 16, `adjustment_reason` 15, `workaround` 12,
+  `detail` 6, `worst_case` 4. `adjustment_reason` has the worst ratio: 28 of its 39 flagged lines
+  are A or E, and it is the field N8 reads through `adjusted_severity`. This is the data behind
+  the second question of decision 7.
+
+**Third point (2026-11-18), run 20261117-233510, adjudicated blind to arm.** 53 pre-screen lines
+and 14 added lines, headers carrying a random token instead of the arm, sections shuffled.
+
+| run | arm | outputs | ≥1 A | ≥1 E | A lines | E lines | lines |
+|---|---|---|---|---|---|---|---|
+| 20261117-233510 | native | 26 | 7 (27%) | 6 (23%) | 15 | 6 | 41 |
+| 20261117-233510 | prompt | 26 | 4 (15%) | 2 (8%) | 7 | 2 | 25 |
+
+- A: gap of 3 (4 if the one disputed `A?` on CVE-2026-86509 counts), same direction as the
+  baseline pair's 4 and 4, against a floor of 1. On the arm-blind pre-screen lines alone 5 vs 3.
+  `CVE-2002-1774` carries a memory claim in the native arm only for the third run running;
+  `CVE-2024-28224` likewise (its A1 claim is an added line). The prompt arm's only native-free A is
+  `CVE-2026-46251` ("experimental", four lines), which both arms produced in the baseline.
+  Three runs, two input shapes, one direction: the hypothesis that constrained decoding invites
+  filling from memory is a result of this experiment, not a hypothesis under doubt. What the three
+  points cannot separate is *why*: a field that must be filled, or a model that writes more when the
+  grammar does the formatting (native prose carries more flagged lines in every run: 49 / 47 / 41
+  against 32 / 35 / 25).
+- E: 6 vs 2, the largest gap of the three runs; on pre-screen lines alone 3 vs 1. Over three runs
+  native E is 4, 5, 6 and prompt 4, 3, 2. The direction is consistent and two of three gaps exceed
+  the floor, so E is read as leaning the same way as A, with less weight: the pre-screen catches E
+  poorly (half of this run's E lines were added by the adjudicator) and the counts are small.
+- Fields: `summary` and `rationale` carry most A again; E stays in `rationale` and
+  `adjustment_reason`.
+
+Caveats. The noise floor is two samples. The first adjudication (baseline pair) saw the arm in each
+section header and was not blind; the third was. The pre-screen-only check is the control for the
+first and a consistency check for the third.
+Two lines are disputed (`A?`), both the conditional "replace the device if it is end-of-life" on
+CVE-2026-86509; neither changes any count, because both outputs carry other A lines. A third run on
+the new input shape (the A1 batch) adds a third point to the floor before the gap is called a
+property of constrained decoding rather than of this corpus. The frequent A on CVE-2007-6252
+("Internet Explorer", "Windows" for a record that says MSIE) is harmless memory and is counted all
+the same: the metric is per output, so one such CVE moves it by at most one.
 
 **Entry 1 (2026-11-13), CVE-2026-86509.** `adjustment_reason` says the device is an "end-of-life
 consumer router" (run 0928) / "legacy consumer router" (run 0919); `remediation.detail` says
@@ -241,8 +367,8 @@ Three things make it the reference case:
   deployment-assumption markers, dates and capitalised names absent from the input) flags 59 of 103
   outputs, including "legacy" / "end-of-life" on CVE-2001-1533, CVE-2002-1774 and CVE-2007-6252,
   where the publication year is in the input and the D test decides. The list is deliberately wide
-  and is evidence of the same class as `data/runs/`; the adjudicated version is the artifact
-  without which the metric cannot be reproduced.
+  and is evidence of the same class as `data/runs/`; the adjudicated version (same file, letters
+  filled in) is the artifact without which the metric cannot be reproduced.
 
 **Open decision 7 (before the golden set).** Device end-of-life is useful to triage. Two honest
 answers: keep the ban and audit for leaks, or give memory a legal outlet, such as a

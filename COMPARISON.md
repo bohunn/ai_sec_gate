@@ -50,7 +50,8 @@ The invented fields were `severity.exploit_note`, `severity.exploit_maturity_not
 failures, six different invented names.** The model reaches for somewhere to editorialise and
 invents a plausible key each time, so no amount of prompt tuning enumerates them away. This is
 exactly what `additionalProperties: false` exists to catch, and constrained decoding makes it
-structurally impossible.
+structurally impossible. (The third run below softens "each time": 4 of its 9 invented names had
+appeared before, 5 had not. A denylist in the prompt would have caught some and missed the rest.)
 
 The 11 parse failures are after fence-stripping and preamble-trimming, so they are genuine
 malformed JSON, not markdown wrapping.
@@ -102,13 +103,51 @@ outright. Neither is a failure that grounding or semantic validation would catch
 nothing in this experiment tests whether either arm gets the facts right. Schema validity and
 truthfulness are separate problems.
 
-## Open hypothesis (2026-11-13): does constrained decoding invite filling from memory?
+## Third run, new input shape (20261117-233510)
 
-A provenance pre-screen of the prose fields (VALIDATION.md, "Prose audit") flags more outputs with
-claims absent from the input in the native arm than in the prompt arm in the first run: 18 of 26
-against 14 of 25. The second run, same model (`claude-opus-5`) and byte-identical input, shows a
-difference of one output (14 vs 13 of 26), so the first run's gap did not replicate. The pre-screen
-is not yet adjudicated, so this is a hypothesis under doubt, not a result: constrained decoding
-forces every field to be filled, and a field that must be filled may be filled from memory. If
-adjudication keeps a gap in both runs, it is the first cost of native structured outputs found in
-this experiment; every axis above favours them.
+Same model, schema and prompt; the input gained `known_exploited`, `kev_date_added` and the v2
+user-interaction flag (VALIDATION.md, "Run 20261117-233510").
+
+| | prompt-only | native |
+| --- | --- | --- |
+| Schema-valid on first attempt | 8/26 | 25/26 |
+| Usable after retries | 26/26 | 26/26 |
+| Total attempts | 44 | 27 |
+| Cost at Opus 5 rates | $2.37 | $1.47 |
+| Median latency per CVE | 25.4 s | 14.0 s |
+
+The native miss is not a constrained-decoding failure: `CVE-2026-76960` hit the 4,096 `max_tokens`
+ceiling and was repaired by the truncation retry with no schema violation. Prompt-only failed 9
+times on malformed JSON and 9 times on an invented field. Verdicts agreed on 25 of 26, the one
+disagreement being `CVE-2024-12366` again, and every verdict in both arms equals the verdict of the
+same arm in both earlier runs.
+
+## Does constrained decoding invite filling from memory? (adjudicated 2026-11-17)
+
+Hypothesis (2026-11-13): constrained decoding forces every field to be filled, and a field that must
+be filled may be filled from memory. The automatic pre-screen could not decide it: native had more
+flagged outputs than prompt in the first run (18 of 26 vs 14 of 25) and the same in the second
+(14 vs 13), inside the run-to-run noise.
+
+Adjudication of every flagged line into provenance categories (VALIDATION.md, "Prose audit")
+removes the noise lines and keeps the gap in both runs:
+
+| outputs with ≥1 memory claim (A) | native | prompt |
+| --- | --- | --- |
+| run 20260919-000440 | 9/26 | 5/25 |
+| run 20260928-093807 | 8/26 | 4/26 |
+| run 20261117-233510 (new input shape, adjudicated blind to arm) | 7/26 | 4/26 |
+
+The same arm moves by one output between the two identical runs; the arms differ by 4, 4 and 3.
+Two CVEs carry memory claims in the native arm only in all three runs. The gap holds on the
+mechanical pre-screen lines alone, without the lines the adjudicator added (8 vs 4, 6 vs 3, 5 vs 3).
+Deployment assumptions (E) lean the same way with less weight: native 4, 5, 6 against prompt
+4, 3, 2.
+
+This is the one cost of native structured outputs found in this experiment; every axis above
+favours them. Three runs, two input shapes, one direction: it is read as a property of the
+technique on this task, not of one corpus run. What the data does not separate is the mechanism,
+a field that must be filled or a model that simply writes more prose when it is not spending effort
+on formatting; the native arm has more flagged lines in every run. The first adjudication was not
+blind to arm, the third was. Native prose has to be audited for provenance; prompt-only prose has
+to be audited too, less often.

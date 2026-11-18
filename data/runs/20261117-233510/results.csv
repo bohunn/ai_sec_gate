@@ -1,0 +1,53 @@
+cve_id,stratum,arm,run,first_attempt_valid,outcome,attempts,violation_count,first_violation_path,first_violation_message,input_tokens,output_tokens,latency_ms,verdict,priority,confidence,adjusted_severity,component_type,mechanism,grounding_hard_fail,grounding_soft_fail,grounding_unverifiable,first_hard_fail_path,model
+CVE-2026-20963,control,prompt,1,true,OK,1,0,,,4038,1107,13699,BLOCK,P0,MEDIUM,CRITICAL,APPLICATION,DESERIALIZATION,0,0,0,,claude-opus-5
+CVE-2026-24061,control,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,9933,2455,28384,BLOCK,P0,MEDIUM,CRITICAL,APPLICATION,INJECTION,0,0,1,,claude-opus-5
+CVE-2026-58234,control,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,8597,1967,22957,WARN,P3,LOW,LOW,APPLICATION,RESOURCE_EXHAUSTION,0,0,6,,claude-opus-5
+CVE-2026-76960,control,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,severity.nvd_severity_note,unexpected field (the schema forbids extras),8688,1896,23238,WARN,P3,LOW,LOW,APPLICATION,OTHER,0,0,5,,claude-opus-5
+CVE-2026-79379,sparse,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,exploitability.likelihood_note,unexpected field (the schema forbids extras),8686,2063,23806,WARN,P2,MEDIUM,MEDIUM,FIRMWARE,MEMORY_SAFETY,0,0,4,,claude-opus-5
+CVE-2026-79577,sparse,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,8616,2561,31939,WARN,P1,LOW,CRITICAL,APPLICATION,AUTHN_BYPASS,0,1,4,,claude-opus-5
+CVE-2026-84282,sparse,prompt,1,true,OK,1,0,,,4014,1388,18390,WARN,P2,LOW,LOW,PLUGIN,OTHER,1,0,4,exploitability.privileges_required,claude-opus-5
+CVE-2024-12366,sparse,prompt,1,false,RECOVERED_AFTER_RETRY,2,2,severity.exploit_hint,unexpected field (the schema forbids extras),8794,2284,26443,NEEDS_HUMAN_REVIEW,P1,LOW,CRITICAL,LIBRARY,INJECTION,0,0,5,,claude-opus-5
+CVE-2026-70613,reject,prompt,1,true,OK,1,0,,,3552,788,10568,ALLOW,P3,HIGH,NONE,UNKNOWN,UNKNOWN,0,0,11,,claude-opus-5
+CVE-2008-1112,reject,prompt,1,true,OK,1,0,,,3649,1111,14975,ALLOW,P3,HIGH,NONE,UNKNOWN,UNKNOWN,0,0,11,,claude-opus-5
+CVE-2001-1533,disputed,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,severity.exploit_maturity_note,unexpected field (the schema forbids extras),9077,2125,24455,WARN,P3,LOW,LOW,APPLICATION,RESOURCE_EXHAUSTION,0,0,2,,claude-opus-5
+CVE-2002-1774,disputed,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,8987,2608,32228,WARN,P3,LOW,LOW,APPLICATION,OTHER,0,0,1,,claude-opus-5
+CVE-2007-6252,metrics,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,severity.expl,unexpected field (the schema forbids extras),8928,2177,26463,WARN,P3,LOW,MEDIUM,APPLICATION,MEMORY_SAFETY,0,0,1,,claude-opus-5
+CVE-2008-1113,metrics,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,exploitability.$comment,unexpected field (the schema forbids extras),9100,2576,31571,WARN,P2,LOW,MEDIUM,APPLICATION,INFO_DISCLOSURE,0,2,2,,claude-opus-5
+CVE-2026-82710,metrics,prompt,1,true,OK,1,0,,,4415,1515,20138,WARN,P3,MEDIUM,LOW,LIBRARY,INJECTION,0,0,4,,claude-opus-5
+CVE-2026-86509,metrics,prompt,1,true,OK,1,0,,,4047,1359,18302,WARN,P1,LOW,HIGH,FIRMWARE,MEMORY_SAFETY,0,0,4,,claude-opus-5
+CVE-2020-1631,scale,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,14552,3249,33982,BLOCK,P0,HIGH,HIGH,OPERATING_SYSTEM,PATH_TRAVERSAL,0,0,0,,claude-opus-5
+CVE-2008-1146,scale,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,9702,3457,41330,WARN,P2,LOW,MEDIUM,OPERATING_SYSTEM,CRYPTO_WEAKNESS,0,3,1,,claude-opus-5
+CVE-2026-46251,scale,prompt,1,false,RECOVERED_AFTER_RETRY,2,1, data_gaps,unexpected field (the schema forbids extras),14090,2645,28719,WARN,P2,MEDIUM,MEDIUM,OPERATING_SYSTEM,MEMORY_SAFETY,0,0,1,,claude-opus-5
+CVE-2008-1115,cwe,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,9082,2324,27531,WARN,P3,LOW,MEDIUM,OPERATING_SYSTEM,INJECTION,0,0,1,,claude-opus-5
+CVE-2007-6703,cwe,prompt,1,true,OK,1,0,,,3993,1704,21974,WARN,P2,LOW,MEDIUM,APPLICATION,UNKNOWN,0,0,1,,claude-opus-5
+CVE-2024-31224,adversarial,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,exploitability.exploit_maturity_note,unexpected field (the schema forbids extras),9137,1803,19587,BLOCK,P0,HIGH,CRITICAL,APPLICATION,DESERIALIZATION,0,0,0,,claude-opus-5
+CVE-2024-28088,adversarial,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,severity.adjustment_reason_note,unexpected field (the schema forbids extras),9340,2397,26708,BLOCK,P1,MEDIUM,HIGH,LIBRARY,PATH_TRAVERSAL,0,0,0,,claude-opus-5
+CVE-2024-28224,adversarial,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,8947,2547,30392,WARN,P1,LOW,MEDIUM,APPLICATION,AUTHZ_FLAW,0,0,1,,claude-opus-5
+CVE-2024-36422,stability,prompt,1,true,OK,1,0,,,4167,1231,15625,WARN,P2,MEDIUM,MEDIUM,APPLICATION,INJECTION,0,0,0,,claude-opus-5
+CVE-2024-36423,stability,prompt,1,false,RECOVERED_AFTER_RETRY,2,1,,the response was not valid JSON,9508,2417,27834,WARN,P2,MEDIUM,MEDIUM,APPLICATION,INJECTION,0,0,0,,claude-opus-5
+CVE-2026-20963,control,native,1,true,OK,1,0,,,5061,1003,16289,BLOCK,P0,HIGH,CRITICAL,APPLICATION,DESERIALIZATION,0,0,0,,claude-opus-5
+CVE-2026-24061,control,native,1,true,OK,1,0,,,5474,979,13708,BLOCK,P0,HIGH,CRITICAL,OS_PACKAGE,AUTHN_BYPASS,0,0,1,,claude-opus-5
+CVE-2026-58234,control,native,1,true,OK,1,0,,,4881,949,14715,WARN,P3,MEDIUM,LOW,APPLICATION,RESOURCE_EXHAUSTION,0,0,6,,claude-opus-5
+CVE-2026-76960,control,native,1,false,RECOVERED_AFTER_RETRY,2,0,,,9824,4999,53037,WARN,P3,MEDIUM,LOW,APPLICATION,OTHER,0,0,4,,claude-opus-5
+CVE-2026-79379,sparse,native,1,true,OK,1,0,,,4907,1187,16503,WARN,P2,MEDIUM,MEDIUM,FIRMWARE,MEMORY_SAFETY,0,0,4,,claude-opus-5
+CVE-2026-79577,sparse,native,1,true,OK,1,0,,,4811,1442,21023,WARN,P1,MEDIUM,CRITICAL,APPLICATION,AUTHN_BYPASS,0,1,4,,claude-opus-5
+CVE-2026-84282,sparse,native,1,true,OK,1,0,,,5037,972,13798,WARN,P2,MEDIUM,MEDIUM,PLUGIN,OTHER,1,0,4,exploitability.privileges_required,claude-opus-5
+CVE-2024-12366,sparse,native,1,true,OK,1,0,,,4890,939,14014,WARN,P1,LOW,CRITICAL,LIBRARY,INJECTION,0,0,5,,claude-opus-5
+CVE-2026-70613,reject,native,1,true,OK,1,0,,,4575,584,8880,ALLOW,P3,HIGH,NONE,UNKNOWN,UNKNOWN,0,0,11,,claude-opus-5
+CVE-2008-1112,reject,native,1,true,OK,1,0,,,4672,697,9999,ALLOW,P3,HIGH,NONE,UNKNOWN,UNKNOWN,0,0,11,,claude-opus-5
+CVE-2001-1533,disputed,native,1,true,OK,1,0,,,5041,925,13760,WARN,P3,MEDIUM,LOW,APPLICATION,RESOURCE_EXHAUSTION,0,0,2,,claude-opus-5
+CVE-2002-1774,disputed,native,1,true,OK,1,0,,,5015,971,14648,WARN,P3,MEDIUM,LOW,APPLICATION,OTHER,0,1,1,,claude-opus-5
+CVE-2007-6252,metrics,native,1,true,OK,1,0,,,5002,898,12380,WARN,P3,MEDIUM,MEDIUM,APPLICATION,MEMORY_SAFETY,0,0,1,,claude-opus-5
+CVE-2008-1113,metrics,native,1,true,OK,1,0,,,5074,991,14420,WARN,P2,LOW,MEDIUM,FIRMWARE,CRYPTO_WEAKNESS,1,3,2,exploitability.attack_vector,claude-opus-5
+CVE-2026-82710,metrics,native,1,true,OK,1,0,,,5438,950,12985,WARN,P3,HIGH,LOW,LIBRARY,INJECTION,0,0,4,,claude-opus-5
+CVE-2026-86509,metrics,native,1,true,OK,1,0,,,5070,964,14002,WARN,P1,MEDIUM,HIGH,FIRMWARE,MEMORY_SAFETY,0,0,4,,claude-opus-5
+CVE-2020-1631,scale,native,1,true,OK,1,0,,,7511,1491,17671,BLOCK,P0,HIGH,HIGH,OPERATING_SYSTEM,PATH_TRAVERSAL,0,0,0,,claude-opus-5
+CVE-2008-1146,scale,native,1,true,OK,1,0,,,5293,1851,25921,WARN,P3,LOW,MEDIUM,OPERATING_SYSTEM,CRYPTO_WEAKNESS,0,3,1,,claude-opus-5
+CVE-2026-46251,scale,native,1,true,OK,1,0,,,7425,1091,14417,WARN,P2,MEDIUM,MEDIUM,OPERATING_SYSTEM,MEMORY_SAFETY,0,0,1,,claude-opus-5
+CVE-2008-1115,cwe,native,1,true,OK,1,0,,,5044,855,12375,WARN,P3,MEDIUM,LOW,OPERATING_SYSTEM,OTHER,0,0,1,,claude-opus-5
+CVE-2007-6703,cwe,native,1,true,OK,1,0,,,5016,970,13428,WARN,P2,MEDIUM,MEDIUM,APPLICATION,UNKNOWN,0,2,1,,claude-opus-5
+CVE-2024-31224,adversarial,native,1,true,OK,1,0,,,5104,847,11472,BLOCK,P0,HIGH,CRITICAL,APPLICATION,DESERIALIZATION,0,0,0,,claude-opus-5
+CVE-2024-28088,adversarial,native,1,true,OK,1,0,,,5122,900,13391,BLOCK,P1,HIGH,HIGH,LIBRARY,PATH_TRAVERSAL,0,1,0,,claude-opus-5
+CVE-2024-28224,adversarial,native,1,true,OK,1,0,,,5010,871,13020,WARN,P2,MEDIUM,MEDIUM,APPLICATION,AUTHZ_FLAW,0,1,1,,claude-opus-5
+CVE-2024-36422,stability,native,1,true,OK,1,0,,,5190,1071,15452,WARN,P2,MEDIUM,MEDIUM,APPLICATION,INJECTION,0,0,0,,claude-opus-5
+CVE-2024-36423,stability,native,1,true,OK,1,0,,,5200,1252,17306,WARN,P1,MEDIUM,MEDIUM,APPLICATION,INJECTION,0,0,0,,claude-opus-5

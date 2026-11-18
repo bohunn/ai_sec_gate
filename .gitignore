@@ -26,6 +26,7 @@ docs/architecture/
 
 data/logs/
 data/runs/*/raw/
+data/prose_audit/worksheet-*.md
 
 # local backups of corpus/runs/logs
 backup/

@@ -54,7 +54,8 @@ result.
   cannot be told apart from an invented one without a second source (OSV).
 - Prose fields can carry true facts from the model's memory (a device being end-of-life, say)
   that the record never stated. No truth check catches that; the prose audit in VALIDATION.md is a
-  provenance check and is manual.
+  provenance check and is manual. Across three runs it finds such a claim in 27–35% of native-arm
+  outputs and 15–20% of prompt-only outputs.
 - One run per CVE is a sample, not a property. Model variance changes first-attempt results between
   runs, even on identical inputs.
 - Records without CPE configuration data give no oracle for `vendor`, `product` and
@@ -65,10 +66,14 @@ result.
 
 - Add OSV as a second source for fixed and introduced version ranges, to verify fixed versions
   the NVD record does not mention.
-- Run one batch with the new input fields (`known_exploited`, v2 user interaction) on the
-  unchanged schema, so the KEV effect is measured alone; then the schema changes as one step.
-- Adjudicate the prose-audit pre-screen (`data/prose_audit/`) into the five categories and report
-  the memory and deployment-assumption rates per model and arm.
+- The schema changes as one step at the next batch boundary (decision 7: a declared outlet for
+  memory and a structured basis for severity adjustment), measured against the three recorded runs.
+  Three runs now agree that the native arm fills prose from memory more often than prompt-only
+  (VALIDATION.md, "Prose audit"); later batches run the native arm alone unless the change under
+  test is about the arms.
+- Repeat the prose audit on the next batch: the adjudicated first two runs show memory claims in
+  about a third of native-arm outputs against a fifth or less in the prompt arm (VALIDATION.md,
+  "Prose audit"), and a third run decides whether that is a property of constrained decoding.
 - Threat-model the trust boundary, in particular forged assistant turns when message history is
   built from untrusted data.
 - Repeat the comparison with several runs per CVE to put an error bar on the results.
@@ -96,7 +101,9 @@ Run it from the repository root, because the CLI reads `data/` relative to the w
 Use `--arm prompt|native` to choose the technique, and `app help` lists all options. To run the
 full two-arm batch, use `scripts/run-batch.sh` (`RUNS=3 scripts/run-batch.sh` repeats each CVE).
 `app ground data/runs/<stamp>` replays a recorded run through the grounding validator without
-calling the API.
+calling the API. `scripts/prose-prescreen.py <stamp> --write data/prose_audit/candidates-<date>.md`
+writes a blind prose pre-screen of a run, `scripts/prose-worksheet.py` renders it next to the
+inputs for adjudication, and `scripts/prose-audit-table.py` tabulates the adjudicated file.
 
 ---
 
